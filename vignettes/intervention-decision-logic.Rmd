@@ -1,0 +1,349 @@
+---
+title: "STEP-IN — Intervention Message Decision Logic"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{STEP-IN — Intervention Message Decision Logic}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+```{r packages, message=FALSE, warning=FALSE, include=FALSE}
+library(stepinWearable)
+library(dplyr)
+library(lubridate)
+```
+
+## Summary of Intervention Logic
+
+This article documents how the intervention module decides **which
+message** template to send and **how to set or adjust** the targets: X
+(steps/day), Y (minutes/day), and Z (target cadence: 80/90/100 steps/min
+for Y).
+
+### Analysis Windows
+
+-   **Current Window:** The date range selected by the user (if exactly
+    14 days are available, all are used; otherwise, the default is the
+    last 14 days).
+
+-   **Previous Window:** The equivalent number of days immediately
+    preceding the start of the Current Window.
+
+### Key Performance Indicators (KPIs)
+
+KPIs are calculated using the `kpis()` function over the daily summary
+(`daily_summary()`):
+
+-   `median_steps_day`: **Median** daily steps. (Updated from 'average'
+    to 'median' for consistency with code)
+
+-   `median_steps_80plus`, `median_steps_90plus`,
+    `median_steps_100plus`: **Median** **minutes** per day at ≥80, ≥90,
+    and ≥100 steps/min, respectively.
+
+### Compliance Rules
+
+-   **Step Compliance** (`steps_ok`): The current window's performance
+    must show an improvement of proposed target (X) with an allowance of
+    1% (e.g., if target was to increment 5%, an increment of at least 4%
+    is considered valid), compared to the previous window: \$\$
+    \\texttt{median_steps_day_cur} \\ge 1.04 \\times
+    \\texttt{median_steps_day_prev} \$\$
+
+-   **Minute Compliance** (`mins_ok`, starting from phase m4): The
+    current window's performance must meet or exceed the last target
+    minutes (Y) *minus 1* at the target cadence (Z): \$\$
+    \\texttt{median_minutes_at_Z_cur} \\ge (Y - 1) \$\$
+
+## Intervention Phases (State-Based)
+
+The system gets the phase of intervention based on the saved state and
+files previously processed for the same participant. The researcher is
+allowed to change the phase of the intervention by selecting the t-index
+of the file being processed:
+
+-   t = 0 → **`post_basal`**: The very first message (following
+    baseline).
+
+-   t: 1−6 → **`m1_3`**: Intervention months 1–3 (focused only on steps
+    accumulation).
+
+-   t = 7 → **`init_m4`**: Initialization of intensity phase (introduces
+    Y min at a Z cadence target).
+
+-   t ≥8 → **`m4_9`**: Intervention months 4–9 (steps + intensity with
+    potential for cadence scaling).
+
+### Phase I (post_basal)
+
+First, the participant wears a Fitbit for two weeks, and this recording
+acts as the baseline measure. Once the first 14 days have been recorded,
+the user is ready to propose the first target.
+
+This first target is focused on steps accumulation, where the steps
+target (X) proposed is 5% above the median steps per day accumulated
+during the baseline 14-day window recording: \$\$
+\\texttt{median_steps_day} \* 1.05 \$\$
+
+> In phase I, the user is not allowed to manually change the proposed
+> target.
+
+### Phase II (m1_3)
+
+From there, every two weeks, the user will download a new recording from
+the Fitbit. Months 1 to 3 (t-indices from 1 to 6) are focused on
+increasing the volume of steps per day (X). After each recording is
+processed, the user can generate a message to propose the next target,
+which is:
+
+-   If `median_steps_day` ≥ X\*, next X is `median_steps_day` \* 1.05
+
+-   If `median_steps_day` \< X\*, next X is equal to previous X
+
+> \*Note: there is an allowance of 1% to decide that the participant met
+> the X target.
+>
+> Users are allowed to manually adjust the multiplication factor to set
+> X in this phase.
+
+### Phase III (init_m4)
+
+In month 4, a new phase starts with the introduction of the minutes per
+day (Y) walking at a given cadence (Z). To decide the initial target,
+the process would explore the current 14-day window and set the target
+as follows:
+
+-   If `median_steps_100plus` ≥ 5\*, the target is the next integer
+    multiple of 5 to `median_steps_100plus` at a cadence of 100
+    steps/min (e.g., if participant accumulates a median of 17 min/day
+    at 100 steps/minute, then the target would be Y = 20, Z = 100).
+
+-   Else, if `median_steps_90plus` ≥ 15\*, the target is set as Y = 5, Z
+    = 100.
+
+-   Else, if `median_steps_90plus` ≥ 5\*, the target is the next integer
+    multiple of 5 to `median_steps_90plus` at a cadence of 90 steps/min
+
+-   Else, if `median_steps_80plus` ≥ 15\*, the target is set as Y = 5, Z
+    = 90.
+
+-   Else, the target is the next integer multiple of 5 to
+    `median_steps_80plus` at a cadence of 80 steps/min
+
+> \*Note: there is an allowance of 1 minute to decide that the
+> participant met the Y/Z target.
+>
+> Users are not allowed to manually adjust Y/Z target in this phase.
+
+### Phase IV (m4_9)
+
+From there, the cadence target (Z) is scaled up if the participant
+successfully met the previous target:
+
+-   If Z = 80 and `median_steps_80plus` ≥ 15 minutes → Next Z = 90
+    steps/min and Y = 5 min/day.
+
+-   If Z = 90 and `median_steps_90plus` ≥ 15 minutes → Next Z = 100
+    steps/min and Y = 5 min/day.
+
+Otherwise, progression of Y and Z follows the same logic as in Phase
+III, considering that if participant meets the previous target, a new
+target of 5 minutes above its current median is proposed, and otherwise,
+the previous target is replicated.
+
+> Users are allowed to manually adjust the X, and the Y/Z targets in
+> this phase.
+
+### Handling Missing Data
+
+If no data (missing rows or all zero values) is present in the **last 3
+days of the current window**, the **`nodata3`** message is displayed,
+and the saved targets are **not updated**.
+
+------------------------------------------------------------------------
+
+## Key Functions
+
+-   `daily_summary(df)`: Converts the minute-level series (`timestamp`,
+    `steps`) to a daily summary, including `steps_day`, `steps_80plus`,
+    `steps_90plus`, and `steps_100plus`.
+
+-   `select_windows(dsum, start_date, end_date)`: Constructs the
+    **Current Window** (start–end) and the **Previous Window** (same
+    number of preceding days).
+
+-   `kpis(win)`: Calculates KPIs for a given window.
+
+-   `decide_message(state, cur_k, prev_k, nombre)`: Applies the
+    phase-based rules and returns:
+
+    -   `key` (chosen template), `text` (rendered message), `next_X`,
+        `next_Y`, `next_Z`, and `consecutive_fails`.
+
+### Consecutive Failure Check
+
+The decision engine tracks `consecutive_fails`. If a participant reaches
+≥2 consecutive failures at meeting the proposed target, the message
+generation will automatically include a **supportive paragraph** to
+encourage compliance, regardless of the chosen message key.
+
+------------------------------------------------------------------------
+
+## Reproducible Example with Synthetic Data
+
+We generate a minute-by-minute series over 20 days with simulated
+activity patterns to demonstrate calculation of minutes at varying
+cadences. We then pass this data through the core logic.
+
+```{r simulate-minute-data}
+set.seed(123)
+
+# --- utility to simulate "walked" minutes at a simulated cadence ---
+simulate_day <- function(date, base_steps = 6000) {
+  # 1440 minutes/day
+  minutes <- seq.POSIXt(as.POSIXct(paste(date, "00:00:00"), tz = "UTC"),
+                        by = "min", length.out = 1440)
+  # Walking blocks: 2-4 blocks of 20-40 min, with cadence 70-110 steps/min
+  n_blocks <- sample(2:4, 1)
+  steps <- rep(0L, 1440)
+  for (b in seq_len(n_blocks)) {
+    len <- sample(20:40, 1)
+    start <- sample(60:(1440 - len - 60), 1)
+    cadence <- sample(70:110, 1)    # steps per minute
+    steps[start:(start + len)] <- cadence
+  }
+  # Light noise/standing (0-10 steps)
+  steps <- steps + rpois(1440, lambda = 1)
+  tibble::tibble(
+    timestamp = minutes,
+    steps = as.integer(steps)
+  )
+}
+
+# 20 synthetic days
+dates <- seq.Date(Sys.Date() - 19, Sys.Date(), by = "day")
+df_minute <- dplyr::bind_rows(lapply(dates, simulate_day))
+df_minute
+```
+
+### Summarize to daily data:
+
+```{r daily-sum}
+dsum <- stepinWearable:::daily_summary(df = df_minute)
+head(dsum)
+```
+
+### Select a 14-day window with select_windows():
+
+```{r windows}
+end_date   <- max(dsum$date)
+start_date <- end_date - 13  # 14 days
+wins <- stepinWearable:::select_windows(
+  dsum, 
+  start_date = start_date, 
+  end_date = end_date)
+
+curk  <- stepinWearable:::kpis(wins$current)
+prevk <- if (nrow(wins$previous) > 0) stepinWearable:::kpis(wins$previous) else NULL
+
+curk
+prevk
+
+```
+
+### Run the **Decision Engine** in the **post-basal** state (empty history):
+
+Here, the `steps_factor` and `minutes_inc` are used to define the next
+target.
+
+```{r decide}
+state0 <- list(
+  history = list(),
+  last_X = NA_integer_, last_Y = NA_integer_, last_Z = NA_integer_,
+  consecutive_fails = 0L
+)
+
+res <- stepinWearable:::decide_message(
+  state = state0, 
+  cur_k = curk, 
+  prev_k = prevk, 
+  nombre = "Maria",
+  steps_factor = 1.05,
+  minutes_inc = 5,
+  t = 0
+)
+str(res)
+cat(res$text)
+```
+
+> In a real app session, these KPIs and the decision are calculated
+> based on the **user-selected window** (and its previous window and
+> target) and the participant's **persistent state**.
+
+------------------------------------------------------------------------
+
+## Result Saving Flow
+
+When the user clicks **Save State** in the module, two actions occur:
+
+1.  A `.RData` file is saved containing **only the selected window**
+    (overwriting if the t-index file already exists):
+
+    -   `steps_ts`: Minute-level data **filtered to the window**.
+
+    -   `dsum`: Daily summary **of that window**.
+
+    -   `medians`: List with medians from the window, including
+        `median_steps_day`, cadence medians, and
+        `window_start`/`window_end` dates.
+
+2.  The participant state file (`*_state.rds`) is updated (upserted) by
+    t-index with:
+
+    -   The window's `kpis`.
+
+    -   The message keys (`auto_message_key`, `final_message_key`).
+
+    -   The new targets for the next cycle: `last_X`, `last_Y`,
+        `last_Z`.
+
+    -   The new `consecutive_fails` count.
+
+> **Note:** If the **last 3 days of the window** are missing
+> information, the targets are **not** updated in the state file.
+
+------------------------------------------------------------------------
+
+## Quick References
+
+-   `?daily_summary` — Daily summary with total steps and minutes at
+    ≥80/90/100.
+
+-   `?select_windows` — Construction of the current and previous
+    analysis windows.
+
+-   `?kpis` — KPIs per window.
+
+-   `?decide_message` — Template choice and adjustment of X/Y/Z targets.
+
+-   `?mod_intervention_server` — Full module flow (automatic message →
+    optional override → Save State).
+
+------------------------------------------------------------------------
+
+## Reproducibility
+
+This vignette uses **synthetic data** generated at compile time and does
+not include real participant data.

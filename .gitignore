@@ -1,0 +1,11 @@
+R/constants.R
+.Rproj.user
+.Rhistory
+.RData
+.httr-oauth
+.DS_Store
+.quarto
+/docs/
+inst/doc
+^README.html
+inst/config.yml

@@ -1,0 +1,166 @@
+---
+title: "Fitbit Processing: Milestone Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fitbit Processing: Milestone Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  fig.width = 7, fig.height = 4
+)
+```
+
+## Overview
+
+This vignette describes the files the **Intervention** module reads and writes:
+
+-   **Participant registry** (`participant_info.rds`) – a simple ID ↔ name lookup used by the app.
+
+-   **Per-participant state** (`state.rds`) – the intervention history and last targets for each participant.
+
+-   **Milestone files** (`<ID>-<YYYYMMDD>-t<N>.RData`) – per-cycle saves that include:
+
+    -   `steps_ts`: minute-level step counts for the selected 14-day window
+
+        `dsum`: daily summary for that window.
+
+    -   `medians`: precomputed medians for convenience.
+
+### Where are these files?
+
+By default the app uses directories derived from the package options set at load time (see `?stepinWearable::run_app`):
+
+-   **Output root**: `getOption("stepin.output_dir")`
+
+-   **Fitbit root**: `file.path(getOption("stepin.output_dir"), "output", "fitbit")`
+
+-   **Participant folder**: `file.path(<fitbit root>, <participant_id>)`
+
+The app creates folders on demand. You can override locations via R options in `.Rprofile`, e.g.:
+
+```{r setup}
+options(
+  stepin.output_dir      = "~/stepinWearable-data",
+  stepin.fitbit_download = "~/stepinWearable-data/download/fitbit"
+)
+```
+
+> These defaults are safe on any machine and don’t require access to an institutional server.
+
+## Participant registry: `participant_info.rds`
+
+-   **Path:** `file.path(<fitbit root>, "participant_info.rds")`
+
+-   **Type:** `list` with the following elements:
+
+    -   **id:** participant-assigned ID
+
+    -   **name:** participant-assigned name (only used for rendering the whatsapp message.
+
+    -   **updated:** time stamp for the last time this file was saved.
+
+## State file: `state.rds`
+
+-   **Path:** `file.path(<fitbit root>, <participant_id>, "state.rds")`
+
+-   **Type:** a named **list** with:
+
+Top-level fields:
+
+| name                | type    | meaning                                     |
+|------------------|---------------|---------------------------------------|
+| `history`           | list    | One entry per cycle (*t*-index). See below. |
+| `last_X`            | numeric | Last target for daily steps (X).            |
+| `last_Y`            | integer | Last target minutes/day at cadence Z (Y).   |
+| `last_Z`            | integer | Last cadence threshold Z (80, 90, or 100).  |
+| `consecutive_fails` | integer | Current streak of failed cycles.            |
+
+Each element of `history` is a named list with:
+
+| name | type | meaning |
+|------------------------|------------------------|------------------------|
+| `t_index` | integer | Cycle index *t*. |
+| `date_str` | character | `YYYYMMDD` start date of the underlying minute series. |
+| `start_date` | Date | First day of the 14-day analysis window. |
+| `end_date` | Date | Last day of the 14-day analysis window. |
+| `kpis` | list | Window KPIs (e.g., `med_steps_day`, `med_steps_80plus/90plus/100plus`). |
+| `steps_factor` | numeric | Factor used to compute next X. |
+| `minutes_inc` | integer | Minute increment applied to Y. |
+| `target_steps` | numeric | Next X (steps/day). |
+| `target_minutes` | integer | Next Y (minutes/day at Z). |
+| `target_cadence` | integer | Next Z (80, 90, 100). |
+| `auto_message_key` | character | Template key picked by the engine. |
+| `final_message_key` | character | Template key actually used (after override, if any). |
+| `manual_override` | logical | `TRUE` if final key differs from auto. |
+| `message` | character | Rendered WhatsApp message stored for audit. |
+
+## Milestone files: `<ID>-<YYYYMMDD>-t<N>.RData`
+
+-   **Path pattern:** `file.path(<fitbit root>, <participant_id>, sprintf("%s-%s-t%d.RData", <ID>, <YYYYMMDD>, <t>))`
+
+-   **Contains:** three objects:
+
+### 1) `steps_ts` (minute level)
+
+A `data.frame` (or `tibble`) with at least:
+
+| column      | type        | meaning                                           |
+|---------------|---------------|-------------------------------------------|
+| `timestamp` | POSIXct     | Minute timestamp (local tz used for comparisons). |
+| `steps`     | numeric/int | Step count for that minute.                       |
+
+### 2) `dsum` (daily summary for the selected 14-day window)
+
+A `data.frame` with:
+
+| column          | type | meaning                           |
+|-----------------|------|-----------------------------------|
+| `date`          | Date | Day.                              |
+| `steps_day`     | num  | Total steps that day.             |
+| `steps_80plus`  | num  | Minutes/day at cadence ≥ 80 spm.  |
+| `steps_90plus`  | num  | Minutes/day at cadence ≥ 90 spm.  |
+| `steps_100plus` | num  | Minutes/day at cadence ≥ 100 spm. |
+
+### 3) `medians` (precomputed convenience values)
+
+A named list:
+
+-   `window_start`, `window_end` (Date),
+
+-   `median_steps_day`,
+
+-   `median_steps_80plus`, `median_steps_90plus`, `median_steps_100plus`.
+
+## Filenames and conventions (summary)
+
+-   **Participant registry:**\
+    `file.path(<output_dir>, "output", "fitbit", "participant_info.rds")`
+
+-   **Participant folder:**\
+    `file.path(<output_dir>, "output", "fitbit", <participant_id>)`
+
+-   **State file:**\
+    `file.path(<participant folder>, "state.rds")`
+
+-   **Milestones:**\
+    `file.path(<participant folder>, sprintf("%s-%s-t%d.RData", <ID>, <YYYYMMDD>, <t>))`
+
+These conventions are enforced by the app when you press **Save Intervention State**.
+
+## See also
+
+-   The **Intervention** module UI/server help pages for how the app reads/writes these files.
+
+-   The README for how to set default directories via `options()`.

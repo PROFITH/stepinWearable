@@ -1,0 +1,264 @@
+# messages.yml — STEP-IN message templates and tips (UTF-8)
+
+templates:
+  msg0: |-
+    Hola {nombre},
+
+    Ya han pasado las dos primeras semanas del programa STEP-IN.
+
+    📝 Mediante la pulsera Fitbit hemos registrado su número de pasos diarios para conocer su punto de partida.
+
+    Ahora vamos a comenzar con su *primer objetivo personalizado*:
+    ➡️ Para las próximas dos semanas, le proponemos caminar *{X} pasos al día* 👣.
+
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo en otro momento.
+
+    📱 Le animamos a entrar cada día en la *plataforma HealthyChronos* desde su móvil, donde podrá ver sus pasos diarios y su meta semanal.
+    ¡Ánimo en esta primera etapa! 💪
+
+    Estamos a su disposición para cualquier duda.
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  pasos1: |-
+    Hola {nombre},
+
+    Nos alegra informarle de que *ha alcanzado su objetivo*. ¡Enhorabuena por su esfuerzo y constancia! 🎉
+
+    ➡️ Su nuevo *objetivo* para las próximas dos semanas será caminar *{X} pasos al día* 👣.
+
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*.
+
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
+
+    ¡Le animamos a seguir así! 💪
+
+    Estamos a su disposición para cualquier duda.
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  pasos2: |-
+    Hola {nombre}:
+
+    Hemos revisado sus pasos de las últimas dos semanas y hemos comprobado que *no ha alcanzado su objetivo*. No se preocupe, esto puede ocurrir y forma parte del proceso.
+
+    ➡️ Para las próximas dos semanas, le proponemos mantener el mismo *objetivo*: caminar *{X} pasos al día* 👣.
+
+    {tips_pasos}
+
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*.
+
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
+
+    ¡Le animamos a seguir avanzando! 💪
+
+    Estamos a su disposición para cualquier duda.
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  ambos1: |-
+    Hola {nombre},
+
+    Nos alegra informarle de que *ha alcanzado su objetivo*. ¡Enhorabuena por su esfuerzo y constancia! 🎉
+
+    A partir de ahora, además de contar los *pasos* (volumen), vamos a fijarnos también en el *ritmo* (intensidad).
+
+    ➡️ Para las próximas dos semanas, le proponemos *dos objetivos*:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos/min*.
+
+    📱 Revise sus gráficos de “pasos” y “cadencia de pasos” en *HealthyChronos*.
+
+    📊 Recuerde: lo importante es la *media semanal*.
+
+    Le animamos a seguir así 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  ambos2: |-
+    Hola {nombre},
+
+    Hemos revisado sus pasos de las últimas dos semanas y hemos comprobado que *todavía no ha alcanzado el objetivo planteado*. No se preocupe.
+
+    A partir de ahora miraremos también el *ritmo* (intensidad).
+
+    ➡️ Para las próximas dos semanas, le proponemos *dos objetivos*:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos/min*.
+
+    {tips_pasos}
+
+    📱 Revise sus gráficos de “pasos” y “cadencia de pasos” en *HealthyChronos*.
+
+    📊 Recuerde: lo importante es la *media semanal*.
+
+    Le animamos a seguir así 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  ambos3: |-
+    Hola {nombre},
+
+    *Ha alcanzado sus objetivos* de pasos y minutos a paso rápido. ¡Enhorabuena! 🎉
+
+    ➡️ Nuevos objetivos (próximas 2 semanas):
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    📱 Puede ver su progreso en *HealthyChronos*.
+
+    📊 Recuerde: la *media semanal* es lo importante.
+
+    ¡Siga así! 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  ambos4: |-
+    Hola {nombre},
+
+    *Ha alcanzado sus objetivos* y gracias a su progreso vamos a dar un *nuevo paso*: aumentamos el ritmo.
+
+    ➡️ A partir de ahora su meta de intensidad será *{Z} pasos/min*. En este nuevo nivel, empezará con *{Y} min/día* para facilitar la adaptación.
+
+    Sus objetivos (próximas 2 semanas):
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+
+    📊 Recuerde: la media semanal cuenta.
+
+    ¡Felicidades por llegar hasta aquí! 💪
+
+  ambos5: |-
+    Hola {nombre},
+
+    En las últimas dos semanas *no ha alcanzado sus objetivos*. No se preocupe, es parte del proceso.
+
+    ➡️ Para las próximas dos semanas, mantenemos:
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    {tips_mixto}
+
+    📱 Consulte su progreso en *HealthyChronos*.
+
+    📊 Recuerde: la *media semanal*.
+
+    ¡Ánimo! 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  ambos6: |-
+    Hola {nombre},
+
+    *Ha logrado el objetivo de pasos* ¡Muy bien! 🎉
+
+    En cuanto al tiempo a paso rápido, aún no alcanzó el objetivo.
+
+    ➡️ Próximas 2 semanas:
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    {tips_intensidad}
+
+    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+
+    📊 Recuerde: la *media semanal*.
+
+    ¡A seguir! 💪
+
+  ambos7: |-
+    Hola {nombre},
+
+    *Ha conseguido el tiempo a paso rápido*, ¡muy bien! 🎉
+
+    En cuanto al número de pasos diarios, aún no alcanzó el objetivo.
+
+    ➡️ Próximas 2 semanas:
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    {tips_pasos}
+
+    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+
+    📊 Recuerde: la *media semanal*.
+
+    ¡Ánimo! 💪
+
+  ambos8: |-
+    Hola {nombre},
+
+    *Ha conseguido el tiempo a paso rápido* y está preparado/a para avanzar al *siguiente nivel de ritmo*: *{Z} pasos/min*.
+
+    En este nuevo nivel, comenzará con *{Y} min/día* para adaptarse al ritmo más rápido.
+
+    ➡️ Objetivos (próximas 2 semanas):
+    - *{X} pasos/día* 👣
+    - *{Y} min/día a {Z} pasos/min*.
+
+    📱 Consulte sus nuevos objetivos en *HealthyChronos*.
+
+    📊 Recuerde: la *media semanal*.
+
+    ¡Ánimo en esta nueva etapa! 💪
+
+  nodata3: |-
+    Hola {nombre},
+
+    Hemos comprobado que en *HealthyChronos* no aparecen sus últimos datos de pasos. Por favor, revise:
+
+    ⌚ ¿Lleva puesta la pulsera Fitbit?
+    📶 ¿Bluetooth activado en el móvil?
+    🔋 ¿Batería suficiente en la pulsera?
+    📱 ¿Ha abierto recientemente la app Fitbit?
+
+    Si el problema persiste, escríbanos. 📞 Contactaremos con usted si fuera necesario.
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+tips:
+  pasos: |-
+    - 🧍‍♀️ Levántese cada hora y camine un poco.
+    - 🛒 Aparque un poco más lejos o bájese una parada antes.
+    - 👥 Caminar en compañía puede motivarle.
+    - 📞 Si habla por teléfono, hágalo de pie o caminando.
+    - ⏰ Revise su gráfico antes de la cena y salga unos minutos si va por debajo.
+  intensidad: |-
+    - 🕖 Elija la hora del día con más energía.
+    - ⏱️ Alterne 30 segundos rápido / 30 segundos habitual varias veces.
+    - 🛣️ Busque caminos llanos y rectos.
+    - 👫 Si camina con alguien, suban un poco el ritmo a ratos.
+    - 🎶 Música con ritmo constante (si le resulta cómodo y seguro).
+  mixto: |-
+    - 🧍‍♀️ Levántese cada hora y camine un poco.
+    - 🛒 Aparque un poco más lejos o bájese una parada antes.
+    - 👥 Caminar en compañía puede motivarle.
+    - 📞 Si habla por teléfono, hágalo de pie o caminando.
+    - ⏰ Revise su gráfico antes de la cena y salga unos minutos si va por debajo.
+    - 🕖 Elija la hora del día con más energía.
+    - ⏱️ Alterne 30 segundos rápido / 30 segundos habitual varias veces.
+    - 🛣️ Busque caminos llanos y rectos.
+    - 👫 Si camina con alguien, suban un poco el ritmo a ratos.
+    - 🎶 Música con ritmo constante (si le resulta cómodo y seguro).
+
+support:
+  consecutive_failures_paragraph: |-
+    “Si hay algo que quiera comentarnos o cree que puede estar influyendo en su rutina (tiempo, salud, motivación…), no dude en escribirnos. Estamos aquí para acompañarle 🤝 ¡Le animamos a seguir avanzando! 💪”

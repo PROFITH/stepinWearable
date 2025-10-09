@@ -1,0 +1,52 @@
+Package: stepinWearable
+Title: Step-IN Wearable Data Management App
+Version: 0.1.0
+Authors@R: 
+    person(given = "Jairo H.",
+           family = "Migueles",
+           role = c("aut", "cre"),
+           email = "jairo@jhmigueles.com", 
+           comment = "PROFITH Research Group")
+Description: A Shiny app for uploading, validating and processing data from Fitbit, StepWatch, Matrix, and diaries collected in the framework of the STEP-IN project at the University of Granada (Spain).
+License: GPL (>= 3)
+Depends:
+    R (>= 4.1.0)
+Imports: 
+    config,
+    golem,
+    shiny,
+    plotly,
+    ggplot2,
+    lubridate,
+    readxl,
+    GGIR,
+    dplyr,
+    shinyWidgets,
+    shinyjs,
+    tibble,
+    rintrojs,
+    shinyFiles,
+    fontawesome,
+    bslib,
+    DT,
+    GGIRread,
+    data.table,
+    glue,
+    shinybusy,
+    shinycssloaders,
+    writexl,
+    htmltools,
+    yaml
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+URL: https://github.com/PROFITH/stepinWearable
+BugReports: https://github.com/PROFITH/stepinWearable/issues
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat,
+    DiagrammeR,
+    spelling
+VignetteBuilder: knitr
+Language: en-US
