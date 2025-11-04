@@ -4,14 +4,14 @@
 \alias{steps_met}
 \title{Check Compliance for Step Goal (X)}
 \usage{
-steps_met(cur_med_steps, prev_med_steps, steps_factor)
+steps_met(cur_med_steps, prev_target, steps_factor)
 }
 \arguments{
 \item{cur_med_steps}{Current median daily steps.}
 
-\item{prev_med_steps}{Previous median daily steps.}
-
 \item{steps_factor}{The growth factor required for success (e.g., 1.05 for +5\%).}
+
+\item{prev_med_steps}{Previous median daily steps.}
 }
 \value{
 Logical. \code{TRUE} if compliance threshold is met.

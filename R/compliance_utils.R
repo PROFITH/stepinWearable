@@ -42,9 +42,10 @@ kpis <- function(win) {
 #' @param steps_factor The growth factor required for success (e.g., 1.05 for +5\%).
 #'
 #' @return Logical. \code{TRUE} if compliance threshold is met.
-steps_met <- function(cur_med_steps, prev_med_steps, steps_factor) {
-  if (is.na(prev_med_steps) || is.nan(prev_med_steps)) return(TRUE) # return TRUE if not previous x, only in t = 0
-  (cur_med_steps / max(1, prev_med_steps)) >= steps_factor - 0.01
+steps_met <- function(cur_med_steps, prev_target, steps_factor) {
+  if (is.na(prev_target) || is.nan(prev_target)) return(TRUE) # return TRUE if not previous x, only in t = 0
+  readjusted_target = (prev_target / steps_factor) * (steps_factor - 0.01)   # 1% tolerance
+  cur_med_steps >= readjusted_target 
 }
 
 #' Check Compliance for Minute Goal (Y)

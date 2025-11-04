@@ -45,7 +45,9 @@ check_vpn_and_server_access <- function(server_host = NULL, path_test = NULL) {
   }
   
   ping_result <- suppressWarnings(system(ping_cmd, intern = TRUE, ignore.stderr = TRUE))
-  vpn_connected <- any(grepl("TTL=", ping_result)) || any(grepl("bytes from", ping_result))
+  suppressWarnings({
+    vpn_connected <- any(grepl("TTL=", ping_result)) || any(grepl("bytes from", ping_result))
+  })
   server_accessible <- file.exists(path_test)
   
   result <- list(

@@ -261,4 +261,6 @@ tips:
 
 support:
   consecutive_failures_paragraph: |-
-    “Si hay algo que quiera comentarnos o cree que puede estar influyendo en su rutina (tiempo, salud, motivación…), no dude en escribirnos. Estamos aquí para acompañarle 🤝 ¡Le animamos a seguir avanzando! 💪”
+    Si hay algo que quiera comentarnos o cree que puede estar influyendo en su rutina (tiempo, salud, motivación…), no dude en escribirnos. Estamos aquí para acompañarle 🤝 ¡Le animamos a seguir avanzando! 💪
+  consecutive_success_paragraph: |-
+    TO DO: MENSAJE PARA DAR LA ENHORABUENA POR LA CONSISTENCIA

@@ -82,9 +82,10 @@ load_participant_state <- function(outdir, participant_id) {
     last_X = NA_integer_,            # last daily steps target
     last_Y = 0L,                     # last minutes/day at Z target
     last_Z = NA_integer_,            # last cadence target (80/90/100)
-    last_steps_factor = NA,
-    last_minutes_inc = NA,
-    consecutive_fails = 0L           # consecutive review failures
+    last_steps_factor = NA,          # last steps factor used in the calculation of previous target
+    last_minutes_inc = NA,           # last minutes increment used in the calculation of previous target
+    consecutive_fails = 0L,          # consecutive review failures
+    consecutive_success = 0L         # consecutive review failures
   )
 }
 

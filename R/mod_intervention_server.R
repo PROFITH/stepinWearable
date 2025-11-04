@@ -315,6 +315,7 @@ mod_intervention_server <- function(id) {
       final_key = NULL,           # template actually shown (auto by default, or override)
       glue_env = NULL,            # glue environment to render any template consistently
       add_supportive = FALSE,     # whether supportive paragraph applies (2+ fails)
+      add_congrats = FALSE,       # whether congrats paragraph applies (2+ success)
       curk = NULL,                # current 14-day KPIs (or NULL if nodata3)
       start_date = NULL,          # KPI window start (used for display/audit)
       end_date = NULL,            # KPI window end (used for display/audit)
@@ -322,6 +323,7 @@ mod_intervention_server <- function(id) {
       next_Y = NA_integer_,
       next_Z = NA_integer_,
       consecutive_fails = 0L,     # streak computed by engine for this cycle
+      consecutive_success = 0L,   # streak computed by engine for this cycle
       processed_dir = NULL,       # resolved processed dir for state persistence
       message = NULL              # message sent to participant
     )
@@ -858,8 +860,8 @@ mod_intervention_server <- function(id) {
     rv_defaults <- reactiveValues(rec_sf = NULL, rec_mi = NULL)
     success_flags <- function(st, curk, t) {
       has_prev_X <- !is.null(st$last_X) && is.finite(st$last_X) && t > 0
-      has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 7
-      has_prev_Z <- !is.null(st$last_Z) && is.finite(st$last_Z) && t > 7
+      has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 6
+      has_prev_Z <- !is.null(st$last_Z) && is.finite(st$last_Z) && t > 6
       
       steps_ok <- steps_met(curk$med_steps_day, st$last_X, 1)
       
@@ -913,6 +915,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$auto_key       <- "nodata3"
         rv_ctx$final_key      <- "nodata3"
         rv_ctx$add_supportive <- FALSE
+        rv_ctx$add_congrats   <- FALSE
         rv_ctx$processed_dir  <- processed_dir
         rv_ctx$start_date     <- wins$start_date
         rv_ctx$end_date       <- wins$end_date
@@ -926,7 +929,9 @@ mod_intervention_server <- function(id) {
       
       # KPIs on the *selected* current and previous windows
       curk  <- kpis(wins$current)
-      prevk <- if (nrow(wins$previous) > 0) kpis(wins$previous) else NULL
+      prevk <- if (length(st$history) > 0) st$history[[input$t_index_input]]$kpis else NULL
+      prevstepsfactor <- if (length(st$history) > 0) st$history[[input$t_index_input]]$steps_factor else NULL
+      prevminutesinc <- if (length(st$history) > 0) st$history[[input$t_index_input]]$minutes_inc else NULL
       
       # Researcher-adjusted factors
       # Initial recommended values based on ok flags
@@ -970,20 +975,22 @@ mod_intervention_server <- function(id) {
       )
       
       # Fill context - but DO NOT write the state yet
-      rv_ctx$available         <- TRUE
-      rv_ctx$auto_key          <- res$key
-      rv_ctx$final_key         <- res$key
-      rv_ctx$glue_env          <- glue_env
-      rv_ctx$add_supportive    <- res$consecutive_fails >= 2L
-      rv_ctx$curk              <- curk
-      rv_ctx$start_date        <- wins$start_date
-      rv_ctx$end_date          <- wins$end_date
-      rv_ctx$next_X            <- res$next_X
-      rv_ctx$next_Y            <- res$next_Y
-      rv_ctx$next_Z            <- res$next_Z
-      rv_ctx$consecutive_fails <- res$consecutive_fails
-      rv_ctx$processed_dir     <- processed_dir
-      rv_ctx$message           <- res$text
+      rv_ctx$available           <- TRUE
+      rv_ctx$auto_key            <- res$key
+      rv_ctx$final_key           <- res$key
+      rv_ctx$glue_env            <- glue_env
+      rv_ctx$add_supportive      <- res$consecutive_fails >= 2L
+      rv_ctx$add_congrats        <- res$consecutive_success >= 2L
+      rv_ctx$curk                <- curk
+      rv_ctx$start_date          <- wins$start_date
+      rv_ctx$end_date            <- wins$end_date
+      rv_ctx$next_X              <- res$next_X
+      rv_ctx$next_Y              <- res$next_Y
+      rv_ctx$next_Z              <- res$next_Z
+      rv_ctx$consecutive_fails   <- res$consecutive_fails
+      rv_ctx$consecutive_success <- res$consecutive_success
+      rv_ctx$processed_dir       <- processed_dir
+      rv_ctx$message             <- res$text
       
       # ALWAYS show the automatic message first
       output$step_prompt <- renderText(res$text)
@@ -1019,14 +1026,18 @@ mod_intervention_server <- function(id) {
       # "Auto" -> restore the automatic choice
       if (input$override_select == "auto") {
         rv_ctx$final_key <- rv_ctx$auto_key
-        txt <- render_template_with_env(rv_ctx$auto_key, rv_ctx$glue_env, rv_ctx$add_supportive)
+        txt <- render_template_with_env(rv_ctx$auto_key, rv_ctx$glue_env, 
+                                        rv_ctx$add_supportive, rv_ctx$add_congrats)
         output$step_prompt <- renderText(txt)
         return(invisible())
       }
       
       # Manual override: change the template used for display (targets stay the same)
       rv_ctx$final_key <- input$override_select
-      txt <- render_template_with_env(rv_ctx$final_key, rv_ctx$glue_env, rv_ctx$add_supportive)
+      txt <- render_template_with_env(rv_ctx$final_key, 
+                                      rv_ctx$glue_env, 
+                                      rv_ctx$add_supportive,
+                                      rv_ctx$add_congrats)
       output$step_prompt <- renderText(txt)
       
     })
@@ -1127,7 +1138,10 @@ mod_intervention_server <- function(id) {
         st$last_X <- rv_ctx$next_X
         st$last_Y <- rv_ctx$next_Y
         st$last_Z <- rv_ctx$next_Z
+        st$last_steps_factor <- input$steps_factor
+        st$last_minutes_inc <- input$minutes_increment
         st$consecutive_fails <- rv_ctx$consecutive_fails
+        st$consecutive_success <- rv_ctx$consecutive_success
       }
       save_participant_state(st, processed_dir, input$participant_id)
       removeNotification(ns("save_reminder"))     # <- hide the reminder

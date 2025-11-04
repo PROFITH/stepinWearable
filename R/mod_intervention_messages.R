@@ -88,8 +88,8 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   # 0 -> post-basal; 1..6 -> months 1-3; 7 -> start of month 4; >=8 -> months 4-9.
   phase <- dplyr::case_when(
     t == 0          ~ "post_basal",
-    t >= 1 & t <= 6 ~       "m1_3",
-    t == 7          ~    "init_m4",
+    t >= 1 & t <= 5 ~       "m1_3",
+    t == 6          ~    "init_m4",
     TRUE            ~       "m4_9"
   )
   
@@ -97,14 +97,18 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   prev_X <- state$last_X
   prev_Y <- state$last_Y
   prev_Z <- state$last_Z
+  last_steps_factor <- state$last_steps_factor
+  last_minutes_inc <- state$last_minutes_inc
   
   has_prev_X <- !is.null(prev_X) && is.finite(prev_X) && t > 0
-  has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 7
-  has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 7
+  has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 6
+  has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 6
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
-    steps_met(cur_k$med_steps_day, prev_k$med_steps_day, steps_factor)
+    print("prev k:")
+    print(prev_k)
+    steps_met(cur_k$med_steps_day, prev_X, last_steps_factor)
   } else NA
   
   # Minutes improvement flag
@@ -115,7 +119,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     TRUE ~ NA_real_
   )
   mins_ok <- if (has_prev_Y && !is.na(cur_minutes_at_prevZ)) {
-    minutes_met(cur_minutes_at_prevZ, prev_Y, minutes_inc)
+    minutes_met(cur_minutes_at_prevZ, prev_Y, last_minutes_inc)
   } else NA
   
   # ---- Next targets ----
@@ -123,7 +127,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   base_X <- if (has_prev_X && isFALSE(steps_ok)) prev_X else cur_k$med_steps_day
   next_X <- round(base_X * steps_factor)
   
-  # Z: introduce on init_m4 (t = 7), maybe escalate on m4_9, otherwise keep
+  # Z: introduce on init_m4 (t = 6), maybe escalate on m4_9, otherwise keep
   if (phase == "init_m4" && !has_prev_Z) {
     next_Z <- next_Z <- dplyr::case_when(
       cur_k$med_steps_100plus >= 5 ~ 100L,
@@ -180,6 +184,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   failed_this_round <- (phase == "m1_3"  & !isTRUE(steps_ok)) ||
     (phase == "m4_9"  & (!isTRUE(steps_ok) | !isTRUE(mins_ok)))
   new_consecutive_fails <- if (isTRUE(failed_this_round)) (state$consecutive_fails %||% 0L) + 1L else 0L
+  new_consecutive_success <- if (phase != "post_basal" && isFALSE(failed_this_round)) (state$consecutive_success %||% 0L) + 1L else 0L
   
   # Render message with the slider-derived targets
   glue_env <- list(
@@ -196,11 +201,16 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     txt <- paste0(txt, "\n\n", msgs$support$consecutive_failures_paragraph)
   }
   
+  if (new_consecutive_success >= 2L) {
+    txt <- paste0(txt, "\n\n", msgs$support$consecutive_success_paragraph)
+  }
+  
   # return
   list(
     key = key, text = txt,
     next_X = next_X, next_Y = next_Y, next_Z = next_Z,
-    consecutive_fails = new_consecutive_fails
+    consecutive_fails = new_consecutive_fails,
+    consecutive_success = new_consecutive_success
   )
 }
 
@@ -220,12 +230,15 @@ decide_message <- function(state, cur_k, prev_k, nombre,
 #'
 #' @importFrom glue glue
 #' @noRd
-render_template_with_env <- function(template_key, glue_env, add_supportive) {
+render_template_with_env <- function(template_key, glue_env, add_supportive, add_congrats) {
   # load messages
   msgs <- load_messages()
   txt  <- do.call(glue::glue, c(list(msgs$templates[[template_key]]), glue_env))
   if (isTRUE(add_supportive)) {
     txt <- paste0(txt, "\n\n", msgs$support$consecutive_failures_paragraph)
+  }
+  if (isTRUE(add_congrats)) {
+    txt <- paste0(txt, "\n\n", msgs$support$consecutive_success_paragraph)
   }
   txt
 }
