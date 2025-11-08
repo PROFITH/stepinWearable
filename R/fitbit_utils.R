@@ -43,13 +43,13 @@ preprocess_fitbit <- function(file_path,
   }
   
   # ---- 2) Keep only Steps; rename to (timestamp_raw, steps) ----
-  d <- data[data$MeasurementType == "Steps",
-            c("MeasurementDateTime", "MeasurementValue")]
-  if (nrow(d) == 0) stop("No 'Steps' rows found in file.")
-  names(d) <- c("timestamp_raw", "steps")
+  d <- data[data$MeasurementType %in% c("Steps", "Heart rate"),
+            c("MeasurementDateTime", "MeasurementType", "MeasurementValue")]
+  if (!"Steps" %in% unique(d$MeasurementType)) stop("No 'Steps' rows found in file.")
+  if (!"Heart rate" %in% unique(d$MeasurementType)) stop("No 'Steps' rows found in file.")
   
   # ---- 3) Parse datetimes robustly ----
-  v <- d$timestamp_raw
+  v <- d$MeasurementDateTime
   
   parse_char <- function(x, tz_local, local_clock) {
     # Try common day-month / ISO layouts. Add more if your export varies.
@@ -72,7 +72,7 @@ preprocess_fitbit <- function(file_path,
     as.POSIXct(x * 86400, origin = "1899-12-30", tz = tz_local)
   }
   
-  ts <- if (inherits(v, "POSIXct")) {
+  d$MeasurementDateTime <- if (inherits(v, "POSIXct")) {
     if (timestamps_are_local) {
       lubridate::force_tz(v, tzone = tz)  # assign tz, do not shift
     } else {
@@ -89,22 +89,36 @@ preprocess_fitbit <- function(file_path,
     parse_char(as.character(v), tz_local = tz, local_clock = timestamps_are_local)
   }
   
+  
+  # reshape
+  d_steps = d[d$MeasurementType == "Steps", c("MeasurementDateTime", "MeasurementValue")]
+  d_hr = d[d$MeasurementType == "Heart rate", c("MeasurementDateTime", "MeasurementValue")]
+  # Remove exact duplicate rows
+  d_hr <- d_hr[!duplicated(d_hr), ]
+  
+  d_wide = merge(d_steps, d_hr, by = "MeasurementDateTime", 
+                 all = T, suffixes = c("_steps", "_hr"))
+  d_wide <- d_wide[order(d_wide$MeasurementDateTime), ]
+  names(d_wide) <- c("timestamp", "steps", "hr")
+  
   # ---- 4) Clean and aggregate ----
-  d <- tibble::tibble(timestamp = ts, steps = suppressWarnings(as.numeric(d$steps))) %>%
+  d <- tibble::tibble(timestamp = d_wide$timestamp, steps = suppressWarnings(as.numeric(d_wide$steps)),
+                      hr = suppressWarnings(as.numeric(d_wide$hr))) %>%
     dplyr::filter(!is.na(timestamp), !is.na(steps)) %>%
     dplyr::arrange(timestamp)
   
-  # Remove exact duplicate rows
-  d <- d[!duplicated(d), ]
+  colnames(d) = c("timestamp", "steps", "hr")
   
   # Ensure one row per minute: if duplicates per same timestamp exist, sum them
   d <- d %>%
     dplyr::group_by(timestamp) %>%
-    dplyr::summarise(steps = sum(steps, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::summarise(steps = sum(steps, na.rm = TRUE), 
+                     hr = mean(hr, na.rm = TRUE), .groups = "drop") %>%
     dplyr::arrange(timestamp)
   
   # Coerce steps to numeric (integer-like)
   d$steps <- as.numeric(d$steps)
+  d$hr <- as.numeric(d$hr)
   
   # Safety: ensure the clock time is stamped as local (no clock shift)
   d$timestamp <- lubridate::force_tz(d$timestamp, tzone = tz)

@@ -26,7 +26,8 @@ kpis <- function(win) {
     med_steps_day = median(win$steps_day, na.rm = TRUE),
     med_steps_80plus  = median(win$steps_80plus,  na.rm = TRUE),
     med_steps_90plus  = median(win$steps_90plus,  na.rm = TRUE),
-    med_steps_100plus = median(win$steps_100plus, na.rm = TRUE)
+    med_steps_100plus = median(win$steps_100plus, na.rm = TRUE),
+    total_steps = sum(win$steps_day, na.rm = TRUE)
   )
 }
 

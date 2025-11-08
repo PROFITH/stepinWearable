@@ -69,6 +69,17 @@ mod_intervention_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    # Small helpers
+    fmt_int <- function(x) {
+      if (is.null(x) || is.na(x)) return(0L)
+      as.integer(x)
+    }
+    fmt_num <- function(x) {
+      if (is.null(x) || is.na(x)) return(0)
+      as.numeric(x)
+    }
+    fmt_big <- function(x) format(x, big.mark = ".", decimal.mark = ",")
+    
     # ---- Interactive tutorial (rintrojs) ----
     observeEvent(input$start_tutorial_btn, {
       
@@ -682,45 +693,63 @@ mod_intervention_server <- function(id) {
       
       # Select the series to plot and the y-axis label
       if (identical(input$cadence_filter, "Total steps")) {
-        df_bar <- dplyr::transmute(dsum, date, value = steps_day)
+        df_bar <- dplyr::transmute(dsum, date, value = steps_day, valid_day = valid_day)
         ylab <- "Steps per day"
         colorbar_title <- "Steps"
       } else {
         thr <- switch(
           input$cadence_filter,
-          "Steps \u2265 80" = 80L,
-          "Steps \u2265 90" = 90L,
+          "Steps \u2265 80"  = 80L,
+          "Steps \u2265 90"  = 90L,
           "Steps \u2265 100" = 100L
         )
-        # For cadence modes, `value` is MINUTES at/above the threshold (one row = one minute)
         col <- paste0("steps_", thr, "plus")
-        df_bar <- tibble::tibble(date = dsum$date, value = dsum[[col]])
+        df_bar <- tibble::tibble(date = dsum$date, value = dsum[[col]], valid_day = dsum$valid_day)
         ylab <- paste0("Minutes/day at cadence \u2265 ", thr)
         colorbar_title <- "Minutes"
       }
       
+      valid_df   <- dplyr::filter(df_bar,  valid_day %in% TRUE)
+      invalid_df <- dplyr::filter(df_bar, !valid_day %in% TRUE)
+      
       # Continuous gradient: low values red, mid amber, high green
       #    Plotly treats numeric `color` as continuous and builds a colorscale.
-      p <- plotly::plot_ly(
-        df_bar,
-        x = ~date,
-        y = ~value,
-        type = "bar",
-        color = ~value,
-        colors = c("#ef4444", "#f59e0b", "#16a34a"),
-        hovertemplate = paste0("%{x}<br>", ylab, ": %{y}<extra></extra>"),
-        showlegend = FALSE
-      ) |>
+      p <- plotly::plot_ly()
+      
+      # valid days: keep your gradient
+      if (nrow(valid_df)) {
+        p <- p |>
+          plotly::add_bars(
+            data = valid_df,
+            x = ~date, y = ~value,
+            color = ~value,
+            colors = c("#ef4444", "#f59e0b", "#16a34a"),
+            hovertemplate = paste0("%{x}<br>", ylab, ": %{y}<extra></extra>"),
+            showlegend = FALSE
+          )
+      }
+      
+      # invalid days: fixed gray
+      if (nrow(invalid_df)) {
+        p <- p |>
+          plotly::add_bars(
+            data = invalid_df,
+            x = ~date, y = ~value,
+            marker = list(color = "#9CA3AF"),
+            hovertemplate = paste0("%{x}<br>", ylab, ": %{y}<br><b>Invalid day</b><extra></extra>"),
+            showlegend = FALSE
+          )
+      }
+      
+      p <- p |>
         plotly::layout(
           xaxis = list(title = "Date"),
           yaxis = list(title = ylab),
-          bargap = 0.2
-        ) |>
-        plotly::colorbar(title = colorbar_title)
-        
+          bargap = 0.2,
+          coloraxis = list(colorbar = list(title = colorbar_title))
+        )
       
-      # Return plot and data to overlay median/targets later
-      list(plot = p, data = df_bar)
+      list(plot = p, data = df_bar)  
     })
     
     output$steps_day <- renderPlotly({
@@ -729,130 +758,164 @@ mod_intervention_server <- function(id) {
       # plot and data
       p <- daily_plot_result()$plot
       df_bar <- daily_plot_result()$data
-      req(nrow(df_bar) > 0)
-      
-      # Make sure it's Date
       df_bar$date <- as.Date(df_bar$date)
       
-      # Compute window range (pad +1 day so the last bar is fully visible)
       xr <- range(df_bar$date, na.rm = TRUE)
       x_min <- as.POSIXct(xr[1]) - 25*3600 
       x_max <- as.POSIXct(xr[2]) + 25*3600
       
-      # Median value
-      med_val <- stats::median(df_bar$value, na.rm = TRUE)
+      # median over valid days only
+      med_val <- stats::median(df_bar$value[df_bar$valid_day %in% TRUE], na.rm = TRUE)
       
-      # Median label
-      label_median <- if (identical(input$cadence_filter, "Total steps")) {
-        paste0("Med: ",format(round(med_val)))
-      } else {
-        paste0("Med: ", format(round(med_val)))
-      }
+      shapes <- list()
+      annotations <- list()
       
-      # Load target
-      processed_dir <- get_processed_dir()
-      st <- try(load_participant_state(processed_dir, input$participant_id), silent = TRUE)
-      
-      target_y <- NA_real_
-      label_target <- NULL
-      
-      if (!inherits(st, "try-error")) {
-        # Steps/day (X) target
-        if (identical(input$cadence_filter, "Total steps")) {
-          if (!is.null(st$last_X) && !is.na(st$last_X) && st$last_X > 0) {
-            target_y <- st$last_X
-            label_target <- paste0(
-              "Target: ", format(round(st$last_X))
-            )
-          }
-        } else {
-          # Min/day (Y) at a cadence (Z) target
-          sel_cut <- switch(input$cadence_filter,
-                            "Steps \u2265 80" = 80L,
-                            "Steps \u2265 90" = 90L,
-                            "Steps \u2265 100" = 100L,
-                            NA_integer_)
-          if (!is.na(sel_cut) && !is.null(st$last_Z) && !is.na(st$last_Z) &&
-              !is.null(st$last_Y) && !is.na(st$last_Y) && st$last_Y > 0) {
-            if (identical(as.integer(st$last_Z), sel_cut)) {
-              target_y <- st$last_Y
-              label_target <- paste0(
-                "Target: ", format(round(st$last_Y), big.mark = ".", decimal.mark = ",")
-              )
-            }
-          }
-        }
-      }
-      
-      # Shapes and annotations
-      shapes <- list(
-        list( # Median (dashed line)
-          type = "line",
-          xref = "paper", x0 = 0, x1 = 1,
-          yref = "y",     y0 = med_val, y1 = med_val,
-          line = list(dash = "dash", width = 2)
-        )
-      )
-      annotations <- list(
-        list( # median label
-          xref = "paper", x = 1.02,
-          yref = "y",     y = med_val,
-          text = label_median,
-          xanchor = "left",
-          showarrow = FALSE,
-          align = "left",
-          font = list(size = 12, color = "#111111"),
-          bgcolor = "rgba(255,255,255,0.95)",
-          bordercolor = "#D1D5DB",
-          borderwidth = 1,
-          borderpad = 4
-        )
-      )
-      
-      if (!is.na(target_y) && !is.null(label_target)) {
+      if (is.finite(med_val)) {
         shapes <- c(shapes, list(
-          list( # target (dotted line) 
-            type = "line",
-            xref = "paper", x0 = 0, x1 = 1,
-            yref = "y",     y0 = target_y, y1 = target_y,
-            line = list(dash = "dot", width = 2)
-          )
+          list(type="line", xref="paper", x0=0, x1=1, yref="y", y0=med_val, y1=med_val,
+               line=list(dash="dash", width=2))
         ))
         annotations <- c(annotations, list(
-          list( # target label
-            xref = "paper", x = 1.02,
-            yref = "y",     y = target_y,
-            text = label_target,
-            xanchor = "left",
-            showarrow = FALSE,
-            align = "left",
-            font = list(size = 12, color = "#111111"),
-            bgcolor = "rgba(255,255,255,0.95)",  # white box
-            bordercolor = "#D1D5DB",             # light gray border
-            borderwidth = 1,
-            borderpad = 4
-          )
-        )
-        )
+          list(xref="paper", x=1.02, yref="y", y=med_val,
+               text=paste0("Med: ", format(round(med_val))),
+               xanchor="left", showarrow=FALSE,
+               font=list(size=12, color="#111111"),
+               bgcolor="rgba(255,255,255,0.95)", bordercolor="#D1D5DB", borderwidth=1, borderpad=4)
+        ))
       }
       
-      # Apply axis type/range/format
-      p <- p %>%
+      p <- daily_plot_result()$plot %>%
         plotly::layout(
-          xaxis = list(
-            type = "date",
-            range = c(x_min, x_max),
-            tickformat = "%Y-%m-%d",
-            tickangle = -45,
-            title = "Date"
-          )
+          xaxis = list(type="date", range=c(x_min, x_max), tickformat="%Y-%m-%d", tickangle=-45, title="Date"),
+          shapes = shapes, annotations = annotations
         )
       
-      # add target and median lines/labels to plot
-      p <- p %>% plotly::layout(shapes = shapes, annotations = annotations)
-      
-      # Return styled plot
       style_plotly(p)
+      # df_bar <- daily_plot_result()$data
+      # req(nrow(df_bar) > 0)
+      # 
+      # # Make sure it's Date
+      # df_bar$date <- as.Date(df_bar$date)
+      # 
+      # # Compute window range (pad +1 day so the last bar is fully visible)
+      # xr <- range(df_bar$date, na.rm = TRUE)
+      # x_min <- as.POSIXct(xr[1]) - 25*3600 
+      # x_max <- as.POSIXct(xr[2]) + 25*3600
+      # 
+      # # Median value
+      # med_val <- stats::median(df_bar$value, na.rm = TRUE)
+      # 
+      # # Median label
+      # label_median <- if (identical(input$cadence_filter, "Total steps")) {
+      #   paste0("Med: ",format(round(med_val)))
+      # } else {
+      #   paste0("Med: ", format(round(med_val)))
+      # }
+      # 
+      # # Load target
+      # processed_dir <- get_processed_dir()
+      # st <- try(load_participant_state(processed_dir, input$participant_id), silent = TRUE)
+      # 
+      # target_y <- NA_real_
+      # label_target <- NULL
+      # 
+      # if (!inherits(st, "try-error")) {
+      #   # Steps/day (X) target
+      #   if (identical(input$cadence_filter, "Total steps")) {
+      #     if (!is.null(st$last_X) && !is.na(st$last_X) && st$last_X > 0) {
+      #       target_y <- st$last_X
+      #       label_target <- paste0(
+      #         "Target: ", format(round(st$last_X))
+      #       )
+      #     }
+      #   } else {
+      #     # Min/day (Y) at a cadence (Z) target
+      #     sel_cut <- switch(input$cadence_filter,
+      #                       "Steps \u2265 80" = 80L,
+      #                       "Steps \u2265 90" = 90L,
+      #                       "Steps \u2265 100" = 100L,
+      #                       NA_integer_)
+      #     if (!is.na(sel_cut) && !is.null(st$last_Z) && !is.na(st$last_Z) &&
+      #         !is.null(st$last_Y) && !is.na(st$last_Y) && st$last_Y > 0) {
+      #       if (identical(as.integer(st$last_Z), sel_cut)) {
+      #         target_y <- st$last_Y
+      #         label_target <- paste0(
+      #           "Target: ", format(round(st$last_Y), big.mark = ".", decimal.mark = ",")
+      #         )
+      #       }
+      #     }
+      #   }
+      # }
+      # 
+      # # Shapes and annotations
+      # shapes <- list(
+      #   list( # Median (dashed line)
+      #     type = "line",
+      #     xref = "paper", x0 = 0, x1 = 1,
+      #     yref = "y",     y0 = med_val, y1 = med_val,
+      #     line = list(dash = "dash", width = 2)
+      #   )
+      # )
+      # annotations <- list(
+      #   list( # median label
+      #     xref = "paper", x = 1.02,
+      #     yref = "y",     y = med_val,
+      #     text = label_median,
+      #     xanchor = "left",
+      #     showarrow = FALSE,
+      #     align = "left",
+      #     font = list(size = 12, color = "#111111"),
+      #     bgcolor = "rgba(255,255,255,0.95)",
+      #     bordercolor = "#D1D5DB",
+      #     borderwidth = 1,
+      #     borderpad = 4
+      #   )
+      # )
+      # 
+      # if (!is.na(target_y) && !is.null(label_target)) {
+      #   shapes <- c(shapes, list(
+      #     list( # target (dotted line) 
+      #       type = "line",
+      #       xref = "paper", x0 = 0, x1 = 1,
+      #       yref = "y",     y0 = target_y, y1 = target_y,
+      #       line = list(dash = "dot", width = 2)
+      #     )
+      #   ))
+      #   annotations <- c(annotations, list(
+      #     list( # target label
+      #       xref = "paper", x = 1.02,
+      #       yref = "y",     y = target_y,
+      #       text = label_target,
+      #       xanchor = "left",
+      #       showarrow = FALSE,
+      #       align = "left",
+      #       font = list(size = 12, color = "#111111"),
+      #       bgcolor = "rgba(255,255,255,0.95)",  # white box
+      #       bordercolor = "#D1D5DB",             # light gray border
+      #       borderwidth = 1,
+      #       borderpad = 4
+      #     )
+      #   )
+      #   )
+      # }
+      # 
+      # # Apply axis type/range/format
+      # p <- p %>%
+      #   plotly::layout(
+      #     xaxis = list(
+      #       type = "date",
+      #       range = c(x_min, x_max),
+      #       tickformat = "%Y-%m-%d",
+      #       tickangle = -45,
+      #       title = "Date"
+      #     )
+      #   )
+      # 
+      # # add target and median lines/labels to plot
+      # p <- p %>% plotly::layout(shapes = shapes, annotations = annotations)
+      # 
+      # # Return styled plot
+      # style_plotly(p)
     })
     
     
@@ -895,6 +958,10 @@ mod_intervention_server <- function(id) {
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
       
+      # Restrict to the selected window and keep only valid days
+      cur_all    <- wins$current
+      cur_valid  <- dplyr::filter(cur_all, valid_day %in% TRUE)
+      
       # Branch 1: "No data (3 days)" -> always show automatic nodata message
       if (no_data_last_3_days(dsum, end_date = wins$end_date)) {
         # ---- AUTO: NODATA ----
@@ -928,7 +995,7 @@ mod_intervention_server <- function(id) {
       }
       
       # KPIs on the *selected* current and previous windows
-      curk  <- kpis(wins$current)
+      curk <- kpis(cur_valid)
       prevk <- if (length(st$history) > 0) st$history[[input$t_index_input]]$kpis else NULL
       prevstepsfactor <- if (length(st$history) > 0) st$history[[input$t_index_input]]$steps_factor else NULL
       prevminutesinc <- if (length(st$history) > 0) st$history[[input$t_index_input]]$minutes_inc else NULL
@@ -946,6 +1013,54 @@ mod_intervention_server <- function(id) {
       # Values to apply
       apply_sf <- if (is_override_sf) input$steps_factor     else rec_sf
       apply_mi <- if (is_override_mi) input$minutes_increment else rec_mi
+      
+      # decide message based on n valid days
+      n_valid <- nrow(cur_valid)
+      if (is.na(n_valid) || n_valid < 7) {
+        # ---- FORCE AUTO: NODATA ----
+        msgs <- load_messages()
+        message_templates <- msgs$templates
+        tips_pasos        <- msgs$tips$pasos
+        tips_intensidad   <- msgs$tips$intensidad
+        tips_mixto        <- msgs$tips$mixto
+        
+        glue_env <- list(
+          nombre = input$name %||% "Nombre",
+          X = format(round(st$last_X %||% NA_real_), big.mark = ".", decimal.mark = ","),
+          Y = st$last_Y %||% 0L,
+          Z = st$last_Z %||% NA_integer_,
+          tips_pasos = tips_pasos,
+          tips_intensidad = tips_intensidad,
+          tips_mixto = tips_mixto
+        )
+        
+        rv_ctx$available      <- TRUE
+        rv_ctx$glue_env       <- glue_env
+        rv_ctx$auto_key       <- "nodata3"
+        rv_ctx$final_key      <- "nodata3"
+        rv_ctx$add_supportive <- FALSE
+        rv_ctx$add_congrats   <- FALSE
+        rv_ctx$processed_dir  <- processed_dir
+        rv_ctx$start_date     <- wins$start_date
+        rv_ctx$end_date       <- wins$end_date
+        rv_ctx$curk           <- NULL
+        rv_ctx$next_X         <- st$last_X
+        rv_ctx$next_Y         <- st$last_Y
+        rv_ctx$next_Z         <- st$last_Z
+        rv_ctx$message        <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
+        
+        output$step_prompt <- renderText(rv_ctx$message)
+        updateSelectInput(session, "override_select", selected = "auto")
+        
+        # keep/save reminder
+        removeNotification(ns("set_target"))
+        showNotification(
+          ui = tagList(shiny::icon("info-circle"),
+                       sprintf("Only %d valid days in the selected window (need ≥ 7). Sent 'No data (3 days)'.", n_valid)),
+          type = "warning", duration = 8
+        )
+        return(invisible())
+      }
       
       # Generate message based on decided steps_factor and minutes increment
       res <- decide_message(
@@ -991,6 +1106,8 @@ mod_intervention_server <- function(id) {
       rv_ctx$consecutive_success <- res$consecutive_success
       rv_ctx$processed_dir       <- processed_dir
       rv_ctx$message             <- res$text
+      rv_ctx$steps_met           <- res$steps_met
+      rv_ctx$cadence_met         <- res$cadence_met
       
       # ALWAYS show the automatic message first
       output$step_prompt <- renderText(res$text)
@@ -1063,7 +1180,7 @@ mod_intervention_server <- function(id) {
       
       # --- Use the SELECTED WINDOW for calculations ---
       wins <- active_window()
-      cur  <- wins$current
+      cur  <- dplyr::filter(wins$current, valid_day %in% TRUE)
       if (!nrow(cur)) {
         showNotification("Selected window has no data to save.", type = "error")
         return(invisible())
@@ -1117,7 +1234,9 @@ mod_intervention_server <- function(id) {
         auto_message_key  = rv_ctx$auto_key,
         final_message_key = rv_ctx$final_key,
         manual_override   = !identical(rv_ctx$final_key, rv_ctx$auto_key),
-        message           = rv_ctx$message
+        message           = rv_ctx$message,
+        steps_met         = rv_ctx$steps_met,
+        cadence_met       = rv_ctx$cadence_met
       )
       
       replaced <- FALSE
@@ -1142,6 +1261,61 @@ mod_intervention_server <- function(id) {
         st$last_minutes_inc <- input$minutes_increment
         st$consecutive_fails <- rv_ctx$consecutive_fails
         st$consecutive_success <- rv_ctx$consecutive_success
+        st$total_steps_int <- if (length(st$history)) {
+          sum(sapply(st$history, function(x) x$kpis$total_steps)) 
+        } else {
+          kpis(cur)$total_steps
+        }
+        # TARGETS STEPS
+        st$n_targets_steps = if (!is.na(st$last_X) & rv$current_t > 0) st$n_targets_steps + 1L else st$n_targets_steps
+        st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:6) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
+        st$n_targets_steps_t2 = if(!is.na(st$last_X) & rv$current_t %in% 7:12) st$n_targets_steps_t2 + 1L else st$n_targets_steps_t2
+        st$n_targets_steps_t3 = if(!is.na(st$last_X) & rv$current_t >= 13) st$n_targets_steps_t3 + 1L else st$n_targets_steps_t3
+        st$n_targets_steps_met = if (length(st$history)) {
+          as.integer(sum(sapply(st$history, function(x) x$steps_met), na.rm = T))
+        } else {
+          0L
+        }
+        st$n_targets_steps_met_t1 = if (length(st$history)) {
+          as.integer(sum(sapply(st$history[1:(min(6, length(st$history)))], function(x) x$steps_met), na.rm = T))
+        } else {
+          0L
+        }
+        st$n_targets_steps_met_t2 = if (length(st$history) > 6) {
+          as.integer(sum(sapply(st$history[7:(min(12, length(st$history)))], function(x) x$steps_met), na.rm = T))
+        } else {
+          0L
+        }
+        st$n_targets_steps_met_t3 = if (length(st$history) > 12) {
+          as.integer(sum(sapply(st$history[13:length(st$history)], function(x) x$steps_met), na.rm = T))
+        } else {
+          0L
+        }
+        # TARGETS CADENCE
+        st$n_targets_cadence = if (!is.na(st$last_X) & kpis(cur)$n_days >= 7 & rv$current_t > 6) st$n_targets_cadence + 1L else st$n_targets_cadence
+        # st$n_targets_cadence_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:6) st$n_targets_cadence_t1 + 1L else st$n_targets_cadence_t1
+        st$n_targets_cadence_t2 = if(!is.na(st$last_X) & rv$current_t %in% 7:12) st$n_targets_cadence_t2 + 1L else st$n_targets_cadence_t2
+        st$n_targets_cadence_t3 = if(!is.na(st$last_X) & rv$current_t >= 13) st$n_targets_cadence_t3 + 1L else st$n_targets_cadence_t3
+        st$n_targets_cadence_met = if (length(st$history)) {
+          as.integer(sum(sapply(st$history, function(x) x$cadence_met), na.rm = T))
+        } else {
+          0L
+        }
+        # st$n_targets_cadence_met_t1 = if (length(st$history) > 1) {
+        #   as.integer(sum(sapply(st$history[1:(min(6, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        # } else {
+        #   0L
+        # }
+        st$n_targets_cadence_met_t2 = if (length(st$history) > 6) {
+          as.integer(sum(sapply(st$history[7:(min(12, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        } else {
+          0L
+        }
+        st$n_targets_cadence_met_t3 = if (length(st$history) > 12) {
+          as.integer(sum(sapply(st$history[13:length(st$history)], function(x) x$cadence_met), na.rm = T))
+        } else {
+          0L
+        }
       }
       save_participant_state(st, processed_dir, input$participant_id)
       removeNotification(ns("save_reminder"))     # <- hide the reminder
@@ -1149,7 +1323,86 @@ mod_intervention_server <- function(id) {
         sprintf("Saved window %s \u2192 %s for t%d.", win_start, win_end, rv$current_t),
         type = "message"
       )
+      
+      # ---- Build and show the team summary table (after saving state) ----
+      steps_total <- fmt_num(st$total_steps_int)
+      
+      steps_total_targets     <- fmt_int(st$n_targets_steps)
+      steps_t1_targets        <- fmt_int(st$n_targets_steps_t1)
+      steps_t2_targets        <- fmt_int(st$n_targets_steps_t2)
+      steps_t3_targets        <- fmt_int(st$n_targets_steps_t3)
+      
+      steps_total_met         <- fmt_int(st$n_targets_steps_met)
+      steps_t1_met            <- fmt_int(st$n_targets_steps_met_t1)
+      steps_t2_met            <- fmt_int(st$n_targets_steps_met_t2)
+      steps_t3_met            <- fmt_int(st$n_targets_steps_met_t3)
+      
+      cad_total_targets       <- fmt_int(st$n_targets_cadence)
+      cad_t1_targets          <- fmt_int(st$n_targets_cadence_t1)
+      cad_t2_targets          <- fmt_int(st$n_targets_cadence_t2)
+      cad_t3_targets          <- fmt_int(st$n_targets_cadence_t3)
+      
+      cad_total_met           <- fmt_int(st$n_targets_cadence_met)
+      # cad_t1_met              <- fmt_int(st$n_targets_cadence_met_t1)
+      cad_t2_met              <- fmt_int(st$n_targets_cadence_met_t2)
+      cad_t3_met              <- fmt_int(st$n_targets_cadence_met_t3)
+      
+      summary_df <- data.frame(
+        Category = c(
+          "Steps", "Steps", "Steps", "Steps", "Steps",
+          "Cadence", "Cadence", "Cadence"#, "Cadence"
+        ),
+        Metric = c(
+          "Total steps (cumulative)", 
+          "Targets — total",
+          "Targets — T1 (t 1–6)",
+          "Targets — T2 (t 7–12)",
+          "Targets — T3 (t > 12)",
+          "Targets — total",
+          # "Targets — T1 (t 1–6)",
+          "Targets — T2 (7–12)",
+          "Targets — T3 (t > 12)"
+        ),
+        Value = c(
+          fmt_big(steps_total),
+          sprintf("%d/%d", steps_total_met, steps_total_targets),
+          sprintf("%d/%d", steps_t1_met, steps_t1_targets),
+          sprintf("%d/%d", steps_t2_met, steps_t2_targets),
+          sprintf("%d/%d", steps_t3_met, steps_t3_targets),
+          sprintf("%d/%d", cad_total_met, cad_total_targets),
+          # sprintf("%d/%d", cad_t1_met, cad_t1_targets),
+          sprintf("%d/%d", cad_t2_met, cad_t2_targets),
+          sprintf("%d/%d", cad_t3_met, cad_t3_targets)
+        ),
+        check.names = FALSE
+      )
+      
+      output$team_summary_table <- renderTable({
+        summary_df
+      }, striped = TRUE, bordered = TRUE, hover = TRUE, spacing = "xs")
+      
+      # Quick toast for the team
+      showModal(modalDialog(
+        title = "Intervention summary",
+        easyClose = TRUE,
+        footer = modalButton("OK"),
+        htmltools::HTML(sprintf(
+          paste0(
+            "<p><strong>Cumulative steps:</strong> %s</p>",
+            "<p><strong>Steps targets met:</strong> %d / %d</p>",
+            "<p><strong>Cadence targets met:</strong> %d / %d</p>"
+          ),
+          fmt_big(steps_total),
+          steps_total_met, steps_total_targets,
+          cad_total_met,  cad_total_targets
+        ))
+      ))
     })
+    
+    output$team_summary_table <- renderTable({
+      # blank until first save
+      NULL
+    }, striped = TRUE, bordered = TRUE, hover = TRUE, spacing = "xs")
     
   })
 }

@@ -2,23 +2,35 @@
 % Please edit documentation in R/mod_intervention_utils.R
 \name{daily_summary}
 \alias{daily_summary}
-\title{Calculate Daily Summary from Minute-Level Data}
+\title{Calculate Daily Summary from Minute-Level Data (+ validity flags)}
 \usage{
-daily_summary(df, tz = "Europe/Madrid")
+daily_summary(
+  df,
+  tz = "Europe/Madrid",
+  steps_threshold = 500L,
+  gap_allowance = 90L,
+  required_hr_minutes = 600L
+)
 }
 \arguments{
-\item{df}{A data frame/tibble with minute-level data, including a POSIXct \code{timestamp}
-and numeric \code{steps} columns.}
+\item{df}{Data frame with POSIXct `timestamp`, numeric `steps`, and a heart-rate column
+(any of: `heart_rate`, `HeartRate`, `hr`, `HR`, `bpm`). One row per minute is ideal;
+missing minutes are filled during evaluation.}
 
-\item{tz}{Character string specifying the local time zone (e.g., "Europe/Madrid") to be used
-for anchoring the day boundaries.}
+\item{tz}{Local timezone for day anchoring (default "Europe/Madrid").}
+
+\item{steps_threshold}{Integer, daily step threshold for valid SC day (default 500).}
+
+\item{gap_allowance}{Integer, maximum allowed consecutive minutes without HR (default 90).}
+
+\item{required_hr_minutes}{Integer, HR minutes required per day (default 600 = 10h).}
 }
 \value{
-A tibble with daily summaries, including: \code{date} (Date), \code{steps_day} (total steps),
-  \code{steps_80plus}, \code{steps_90plus}, \code{steps_100plus} (minutes with steps >= threshold).
+Tibble with daily totals plus:
+  wear_minutes_hr, max_hr_gap_min, valid_hr_day, valid_sc_day
 }
 \description{
-Aggregates minute-level steps data into a daily summary, calculating total steps
-and the number of minutes accumulated above specific cadence thresholds (80, 90, 100
-steps/minute).
+Aggregates minute-level data to daily totals and flags valid/invalid days by:
+  1) HR criterion: >= 10h of heart-rate minutes with max consecutive HR gap <= 90 min
+  2) Steps criterion: >= steps_threshold steps in the day (default 500)
 }

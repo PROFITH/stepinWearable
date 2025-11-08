@@ -85,7 +85,24 @@ load_participant_state <- function(outdir, participant_id) {
     last_steps_factor = NA,          # last steps factor used in the calculation of previous target
     last_minutes_inc = NA,           # last minutes increment used in the calculation of previous target
     consecutive_fails = 0L,          # consecutive review failures
-    consecutive_success = 0L         # consecutive review failures
+    consecutive_success = 0L,        # consecutive review failures
+    total_steps_int = 0L,            # total number of steps accumulated during the intervention
+    n_targets_steps = 0L,            # total number of step number targets proposed
+    n_targets_steps_met = 0L,        # total number of step number targets met by participant
+    n_targets_steps_t1 = 0L,         # total number of step number targets proposed
+    n_targets_steps_met_t1 = 0L,     # total number of step number targets met by participant
+    n_targets_steps_t2 = 0L,         # total number of step number targets proposed
+    n_targets_steps_met_t2 = 0L,     # total number of step number targets met by participant
+    n_targets_steps_t3 = 0L,         # total number of step number targets proposed
+    n_targets_steps_met_t3 = 0L,     # total number of step number targets met by participant
+    n_targets_cadence = 0L,          # total number of cadence targets proposed
+    n_targets_cadence_met = 0L,      # total number of cadence targets met by participant
+    n_targets_cadence_t1 = 0L,       # total number of cadence targets proposed
+    n_targets_cadence_met_t1 = 0L,   # total number of cadence targets met by participant
+    n_targets_cadence_t2 = 0L,       # total number of cadence targets proposed
+    n_targets_cadence_met_t2 = 0L,   # total number of cadence targets met by participant
+    n_targets_cadence_t3 = 0L,       # total number of cadence targets proposed
+    n_targets_cadence_met_t3 = 0L    # total number of cadence targets met by participant
   )
 }
 

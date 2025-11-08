@@ -106,8 +106,6 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
-    print("prev k:")
-    print(prev_k)
     steps_met(cur_k$med_steps_day, prev_X, last_steps_factor)
   } else NA
   
@@ -125,7 +123,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   # ---- Next targets ----
   # X: base on previous target
   base_X <- if (has_prev_X && isFALSE(steps_ok)) prev_X else cur_k$med_steps_day
-  next_X <- round(base_X * steps_factor)
+  next_X <- round((base_X * steps_factor)/10)*10 # round to tens
   
   # Z: introduce on init_m4 (t = 6), maybe escalate on m4_9, otherwise keep
   if (phase == "init_m4" && !has_prev_Z) {
@@ -137,13 +135,14 @@ decide_message <- function(state, cur_k, prev_k, nombre,
       TRUE                         ~  80L
     )
     # start intensity with next of currently accumulated among 5, 10, 15
+    # after rounding the median minutes to the closer 5
     varname = paste0("med_steps_", next_Z, "plus")
     next_Y <- dplyr::case_when(
-      # if next_Z is 100 and participant already accumulates more than 15, 
+      # if next_Z is 100 and participant already accumulates more than 12.5, 
       # then next 5-min multiple of current median
-      cur_k[[varname]] >= 15 ~ as.integer(((cur_k[[varname]] %/% 5) + 1) * 5),
-      cur_k[[varname]] >= 10 ~ 15L,
-      cur_k[[varname]] >=  5 ~ 10L,
+      cur_k[[varname]] >= 12.5 ~ as.integer(((cur_k[[varname]] %/% 5) + 1) * 5),
+      cur_k[[varname]] >= 7.5 ~ 15L,
+      cur_k[[varname]] >= 2.5 ~ 10L,
       TRUE                   ~  5L
     )
   } else {
@@ -210,7 +209,8 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     key = key, text = txt,
     next_X = next_X, next_Y = next_Y, next_Z = next_Z,
     consecutive_fails = new_consecutive_fails,
-    consecutive_success = new_consecutive_success
+    consecutive_success = new_consecutive_success,
+    steps_met = steps_ok, cadence_met = mins_ok
   )
 }
 

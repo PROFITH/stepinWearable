@@ -187,7 +187,7 @@ mod_intervention_ui <- function(id) {
                   shiny::sliderInput(
                     ns("steps_factor"), 
                     "Factor de Aumento (X)", 
-                    min = 1.00, max = 1.10, value = 1.05, step = 0.01
+                    min = 0.75, max = 1.10, value = 1.05, step = 0.01
                   )
                 )
               ),
@@ -199,7 +199,7 @@ mod_intervention_ui <- function(id) {
                   shiny::sliderInput(
                     ns("minutes_increment"), 
                     "Incremento de Minutos (Y)", 
-                    min = 0, max = 20, value = 5, step = 5
+                    min = -15, max = 20, value = 5, step = 5
                   )
                 )
               ),
@@ -250,6 +250,18 @@ mod_intervention_ui <- function(id) {
             )
           )
         )       
+      )
+    ),
+    
+    # --- Team-facing summary (auto-updates after Save) ---
+    fluidRow(
+      bslib::card(
+        class = "compact-card",
+        bslib::card_header("Intervention Summary"),
+        bslib::card_body(
+          tags$p(class = "text-muted", "Updated after each Save Intervention State"),
+          tableOutput(ns("team_summary_table"))
+        )
       )
     )
   )
