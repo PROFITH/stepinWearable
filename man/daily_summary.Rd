@@ -9,7 +9,7 @@ daily_summary(
   tz = "Europe/Madrid",
   steps_threshold = 500L,
   gap_allowance = 90L,
-  required_hr_minutes = 600L
+  required_hr_minutes = 480L
 )
 }
 \arguments{

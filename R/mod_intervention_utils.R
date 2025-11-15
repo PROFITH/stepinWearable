@@ -33,7 +33,7 @@ daily_summary <- function(df,
                           tz = "Europe/Madrid",
                           steps_threshold = 500L,
                           gap_allowance = 90L,
-                          required_hr_minutes = 600L) {
+                          required_hr_minutes = 480L) {
   
   # ---- basic checks / column resolution ----
   if (!("timestamp" %in% names(df)))
@@ -164,7 +164,7 @@ daily_summary <- function(df,
     dplyr::arrange(date)
   
   # valid
-  out$valid_day = out$valid_hr_day
+  out$valid_day = out$valid_hr_day & out$valid_sc_day
   
   out
 }

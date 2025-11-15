@@ -791,131 +791,6 @@ mod_intervention_server <- function(id) {
         )
       
       style_plotly(p)
-      # df_bar <- daily_plot_result()$data
-      # req(nrow(df_bar) > 0)
-      # 
-      # # Make sure it's Date
-      # df_bar$date <- as.Date(df_bar$date)
-      # 
-      # # Compute window range (pad +1 day so the last bar is fully visible)
-      # xr <- range(df_bar$date, na.rm = TRUE)
-      # x_min <- as.POSIXct(xr[1]) - 25*3600 
-      # x_max <- as.POSIXct(xr[2]) + 25*3600
-      # 
-      # # Median value
-      # med_val <- stats::median(df_bar$value, na.rm = TRUE)
-      # 
-      # # Median label
-      # label_median <- if (identical(input$cadence_filter, "Total steps")) {
-      #   paste0("Med: ",format(round(med_val)))
-      # } else {
-      #   paste0("Med: ", format(round(med_val)))
-      # }
-      # 
-      # # Load target
-      # processed_dir <- get_processed_dir()
-      # st <- try(load_participant_state(processed_dir, input$participant_id), silent = TRUE)
-      # 
-      # target_y <- NA_real_
-      # label_target <- NULL
-      # 
-      # if (!inherits(st, "try-error")) {
-      #   # Steps/day (X) target
-      #   if (identical(input$cadence_filter, "Total steps")) {
-      #     if (!is.null(st$last_X) && !is.na(st$last_X) && st$last_X > 0) {
-      #       target_y <- st$last_X
-      #       label_target <- paste0(
-      #         "Target: ", format(round(st$last_X))
-      #       )
-      #     }
-      #   } else {
-      #     # Min/day (Y) at a cadence (Z) target
-      #     sel_cut <- switch(input$cadence_filter,
-      #                       "Steps \u2265 80" = 80L,
-      #                       "Steps \u2265 90" = 90L,
-      #                       "Steps \u2265 100" = 100L,
-      #                       NA_integer_)
-      #     if (!is.na(sel_cut) && !is.null(st$last_Z) && !is.na(st$last_Z) &&
-      #         !is.null(st$last_Y) && !is.na(st$last_Y) && st$last_Y > 0) {
-      #       if (identical(as.integer(st$last_Z), sel_cut)) {
-      #         target_y <- st$last_Y
-      #         label_target <- paste0(
-      #           "Target: ", format(round(st$last_Y), big.mark = ".", decimal.mark = ",")
-      #         )
-      #       }
-      #     }
-      #   }
-      # }
-      # 
-      # # Shapes and annotations
-      # shapes <- list(
-      #   list( # Median (dashed line)
-      #     type = "line",
-      #     xref = "paper", x0 = 0, x1 = 1,
-      #     yref = "y",     y0 = med_val, y1 = med_val,
-      #     line = list(dash = "dash", width = 2)
-      #   )
-      # )
-      # annotations <- list(
-      #   list( # median label
-      #     xref = "paper", x = 1.02,
-      #     yref = "y",     y = med_val,
-      #     text = label_median,
-      #     xanchor = "left",
-      #     showarrow = FALSE,
-      #     align = "left",
-      #     font = list(size = 12, color = "#111111"),
-      #     bgcolor = "rgba(255,255,255,0.95)",
-      #     bordercolor = "#D1D5DB",
-      #     borderwidth = 1,
-      #     borderpad = 4
-      #   )
-      # )
-      # 
-      # if (!is.na(target_y) && !is.null(label_target)) {
-      #   shapes <- c(shapes, list(
-      #     list( # target (dotted line) 
-      #       type = "line",
-      #       xref = "paper", x0 = 0, x1 = 1,
-      #       yref = "y",     y0 = target_y, y1 = target_y,
-      #       line = list(dash = "dot", width = 2)
-      #     )
-      #   ))
-      #   annotations <- c(annotations, list(
-      #     list( # target label
-      #       xref = "paper", x = 1.02,
-      #       yref = "y",     y = target_y,
-      #       text = label_target,
-      #       xanchor = "left",
-      #       showarrow = FALSE,
-      #       align = "left",
-      #       font = list(size = 12, color = "#111111"),
-      #       bgcolor = "rgba(255,255,255,0.95)",  # white box
-      #       bordercolor = "#D1D5DB",             # light gray border
-      #       borderwidth = 1,
-      #       borderpad = 4
-      #     )
-      #   )
-      #   )
-      # }
-      # 
-      # # Apply axis type/range/format
-      # p <- p %>%
-      #   plotly::layout(
-      #     xaxis = list(
-      #       type = "date",
-      #       range = c(x_min, x_max),
-      #       tickformat = "%Y-%m-%d",
-      #       tickangle = -45,
-      #       title = "Date"
-      #     )
-      #   )
-      # 
-      # # add target and median lines/labels to plot
-      # p <- p %>% plotly::layout(shapes = shapes, annotations = annotations)
-      # 
-      # # Return styled plot
-      # style_plotly(p)
     })
     
     
@@ -995,7 +870,7 @@ mod_intervention_server <- function(id) {
       }
       
       # KPIs on the *selected* current and previous windows
-      curk <- kpis(cur_valid)
+      curk <- kpis(cur_all)
       prevk <- if (length(st$history) > 0) st$history[[input$t_index_input]]$kpis else NULL
       prevstepsfactor <- if (length(st$history) > 0) st$history[[input$t_index_input]]$steps_factor else NULL
       prevminutesinc <- if (length(st$history) > 0) st$history[[input$t_index_input]]$minutes_inc else NULL
@@ -1262,9 +1137,9 @@ mod_intervention_server <- function(id) {
         st$consecutive_fails <- rv_ctx$consecutive_fails
         st$consecutive_success <- rv_ctx$consecutive_success
         st$total_steps_int <- if (length(st$history)) {
-          sum(sapply(st$history, function(x) x$kpis$total_steps)) 
+          sum(sapply(st$history, function(x) x$kpis$total_steps_alldays)) 
         } else {
-          kpis(cur)$total_steps
+          kpis(cur)$total_steps_alldays
         }
         # TARGETS STEPS
         st$n_targets_steps = if (!is.na(st$last_X) & rv$current_t > 0) st$n_targets_steps + 1L else st$n_targets_steps

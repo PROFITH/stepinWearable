@@ -21,13 +21,16 @@ NULL
 #'
 #' @importFrom stats median
 kpis <- function(win) {
+  win_all = win
+  win = win_all[win_all$valid_day %in% TRUE,]
   tibble::tibble(
     n_days        = dplyr::n_distinct(win$date),
     med_steps_day = median(win$steps_day, na.rm = TRUE),
     med_steps_80plus  = median(win$steps_80plus,  na.rm = TRUE),
     med_steps_90plus  = median(win$steps_90plus,  na.rm = TRUE),
     med_steps_100plus = median(win$steps_100plus, na.rm = TRUE),
-    total_steps = sum(win$steps_day, na.rm = TRUE)
+    total_steps = sum(win$steps_day, na.rm = TRUE),
+    total_steps_alldays = sum(win_all$steps_day, na.rm = TRUE)
   )
 }
 
