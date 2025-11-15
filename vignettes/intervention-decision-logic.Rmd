@@ -213,8 +213,11 @@ set.seed(123)
 # --- utility to simulate "walked" minutes at a simulated cadence ---
 simulate_day <- function(date, base_steps = 6000) {
   # 1440 minutes/day
-  minutes <- seq.POSIXt(as.POSIXct(paste(date, "00:00:00"), tz = "UTC"),
-                        by = "min", length.out = 1440)
+  minutes <- seq.POSIXt(
+    as.POSIXct(paste(date, "00:00:00"), tz = "UTC"),
+    by = "min", length.out = 1440
+  )
+  
   # Walking blocks: 2-4 blocks of 20-40 min, with cadence 70-110 steps/min
   n_blocks <- sample(2:4, 1)
   steps <- rep(0L, 1440)
@@ -224,8 +227,10 @@ simulate_day <- function(date, base_steps = 6000) {
     cadence <- sample(70:110, 1)    # steps per minute
     steps[start:(start + len)] <- cadence
   }
+  
   # Light noise/standing (0-10 steps)
   steps <- steps + rpois(1440, lambda = 1)
+  
   tibble::tibble(
     timestamp = minutes,
     steps = as.integer(steps)
@@ -235,7 +240,17 @@ simulate_day <- function(date, base_steps = 6000) {
 # 20 synthetic days
 dates <- seq.Date(Sys.Date() - 19, Sys.Date(), by = "day")
 df_minute <- dplyr::bind_rows(lapply(dates, simulate_day))
-df_minute
+
+# --- add simulated heart rate (per-minute) ---
+df_minute <- df_minute |>
+  dplyr::mutate(
+    heart_rate = dplyr::case_when(
+      steps == 0L ~ round(rnorm(dplyr::n(), mean = 65, sd = 5)),     # resting
+      steps < 50L ~ round(rnorm(dplyr::n(), mean = 80, sd = 8)),     # light
+      TRUE        ~ round(rnorm(dplyr::n(), mean = 110, sd = 10))    # walking
+    ),
+    heart_rate = pmin(pmax(heart_rate, 50), 180)  # clamp to plausible range
+  )
 ```
 
 ### Summarize to daily data:
