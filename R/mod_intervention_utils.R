@@ -29,6 +29,7 @@ NULL
 #' @importFrom dplyr mutate group_by summarise n_distinct arrange
 #' @importFrom tidyr complete
 #' @importFrom lubridate as_date with_tz floor_date ceiling_date
+#' @export
 daily_summary <- function(df,
                           tz = "Europe/Madrid",
                           steps_threshold = 500L,
@@ -155,7 +156,7 @@ daily_summary <- function(df,
   # steps-based validity
   sc_daily <- base_daily %>%
     dplyr::mutate(valid_sc_day = steps_day >= steps_threshold) %>%
-    dplyr::select(date, valid_sc_day)
+    dplyr::select(date, "valid_sc_day")
   
   # combine
   out <- base_daily %>%

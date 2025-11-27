@@ -20,6 +20,7 @@ NULL
 #'   \code{med_steps_90plus}, \code{med_steps_100plus}.
 #'
 #' @importFrom stats median
+#' @export
 kpis <- function(win) {
   win_all = win
   win = win_all[win_all$valid_day %in% TRUE,]
@@ -42,7 +43,7 @@ kpis <- function(win) {
 #' compared to the previous window's median (based on \code{steps_factor}).
 #'
 #' @param cur_med_steps Current median daily steps.
-#' @param prev_med_steps Previous median daily steps.
+#' @param prev_target Previous median daily steps.
 #' @param steps_factor The growth factor required for success (e.g., 1.05 for +5\%).
 #'
 #' @return Logical. \code{TRUE} if compliance threshold is met.

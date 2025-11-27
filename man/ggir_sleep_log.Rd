@@ -4,14 +4,12 @@
 \alias{ggir_sleep_log}
 \title{Convert Sleep Diary to GGIR Sleep Log Format (Wide Format)}
 \usage{
-ggir_sleep_log(diary, participant_id = "test", file = c(), tz = Sys.timezone())
+ggir_sleep_log(diary, participant_id = "test", tz = Sys.timezone())
 }
 \arguments{
 \item{diary}{A data frame with columns `start` and `end` (both must be `POSIXct`).}
 
 \item{participant_id}{Character ID written to the `ID` column.}
-
-\item{file}{Path to file to save the sleep log in **CSV format**. If empty, the function returns the wide data frame invisibly but does not save.}
 
 \item{tz}{Time zone for formatting the times (default: system time zone). The times in the output file are clock times (\code{hh:mm:ss}).}
 }
@@ -38,6 +36,6 @@ diary <- data.frame(
    end   = as.POSIXct(c("2025-07-11 06:30:00","2025-07-12 07:05:00"))
 )
 # Returns a wide data frame and saves it to the specified path
-log_file <- ggir_sleep_log(diary, "P001", file = "sleep_log_p001.csv")
+log_file <- ggir_sleep_log(diary, "P001")
 }
 }

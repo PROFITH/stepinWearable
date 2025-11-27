@@ -4,12 +4,13 @@
 \alias{preprocess_matrix}
 \title{Preprocess Matrix Accelerometer File with GGIR}
 \usage{
-preprocess_matrix(file_path, participant_id, timeseries_dir = NULL)
+preprocess_matrix(
+  matrix_download_dir = character(0),
+  timeseries_dir = character(0)
+)
 }
 \arguments{
-\item{file_path}{Character. Path to the input `.bin` file recorded by the Matrix device.}
-
-\item{participant_id}{Character. Identifier used to label the file and organize output directories.}
+\item{matrix_download_dir}{Character. Path to the directory in which the input `.bin` files recorded by the Matrix device are stored.}
 
 \item{timeseries_dir}{Character. Path to the output directory for storing processed GGIR results.}
 }
@@ -38,8 +39,7 @@ It assumes a sampling frequency of 15 Hz and uses preconfigured parameters suite
 \examples{
 \dontrun{
 steps_df <- preprocess_matrix(
-  file_path = "path/to/raw_matrix_file.bin",
-  participant_id = "001",
+  matrix_download_dir = "path/to/raw_matrix_dir/",
   timeseries_dir = "data/processed/timeseries/matrix"
 )
 }

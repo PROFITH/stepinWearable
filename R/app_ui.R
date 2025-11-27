@@ -57,17 +57,14 @@ app_ui <- function(request) {
       
       tabsetPanel(
         id = "main_tabs",
-        # 1. INTERVENTION TAB (Active Module)
+        # 1. INTERVENTION TAB
         tabPanel("Intervention",
-                 mod_intervention_ui("intervention_1") # Assuming the UI module is called here
+                 mod_intervention_ui("intervention_1")
         ),
         
-        # 2. ASSESSMENT TAB (Future Module)
-        # The UI for this tab should be hidden or display a message about ongoing development.
+        # 2. ASSESSMENT TAB
         tabPanel("Assessment",
-                 br(), br(),
-                 h3("Assessment Module (Under Development)"),
-                 p("This section is reserved for future integration of advanced analysis methods, including support for Matrix and StepWatch data, and visualizations for data quality and outcomes.")
+                 mod_assessment_ui("assessment")
         )
       )
     )

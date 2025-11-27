@@ -34,7 +34,7 @@
 #' the `consecutive_fails` counter, and a `history` list with one entry per
 #' processed \eqn{t}-index. Each history entry stores:
 #' \describe{
-#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..7 = months 1–3, 8+ = months 4–9).}
+#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..6 = months 1-3, 7+ = months 4-9).}
 #'   \item{date_str}{Character. Start date (YYYYMMDD) of the corresponding minute series.}
 #'   \item{start_date}{Date. First day of the 14-day analysis window used for this entry.}
 #'   \item{end_date}{Date. Last day of the 14-day analysis window used for this entry.}
@@ -704,13 +704,14 @@ mod_intervention_server <- function(id) {
           "Steps \u2265 100" = 100L
         )
         col <- paste0("steps_", thr, "plus")
-        df_bar <- tibble::tibble(date = dsum$date, value = dsum[[col]], valid_day = dsum$valid_day)
+        df_bar <- tibble::tibble(date = dsum$date, value = dsum[[col]], 
+                                 valid_day = dsum$valid_day)
         ylab <- paste0("Minutes/day at cadence \u2265 ", thr)
         colorbar_title <- "Minutes"
       }
       
-      valid_df   <- dplyr::filter(df_bar,  valid_day %in% TRUE)
-      invalid_df <- dplyr::filter(df_bar, !valid_day %in% TRUE)
+      valid_df   <- dplyr::filter(df_bar,  .data$valid_day %in% TRUE)
+      invalid_df <- dplyr::filter(df_bar, !(.data$valid_day %in% TRUE))
       
       # Continuous gradient: low values red, mid amber, high green
       #    Plotly treats numeric `color` as continuous and builds a colorscale.
@@ -931,7 +932,7 @@ mod_intervention_server <- function(id) {
         removeNotification(ns("set_target"))
         showNotification(
           ui = tagList(shiny::icon("info-circle"),
-                       sprintf("Only %d valid days in the selected window (need ≥ 7). Sent 'No data (3 days)'.", n_valid)),
+                       sprintf("Only %d valid days in the selected window (need 7+). Sent 'No data (3 days)'.", n_valid)),
           type = "warning", duration = 8
         )
         return(invisible())
@@ -1229,14 +1230,14 @@ mod_intervention_server <- function(id) {
         ),
         Metric = c(
           "Total steps (cumulative)", 
-          "Targets — total",
-          "Targets — T1 (t 1–6)",
-          "Targets — T2 (t 7–12)",
-          "Targets — T3 (t > 12)",
-          "Targets — total",
-          # "Targets — T1 (t 1–6)",
-          "Targets — T2 (7–12)",
-          "Targets — T3 (t > 12)"
+          "Targets - total",
+          "Targets - T1 (t 1-6)",
+          "Targets - T2 (t 7-12)",
+          "Targets - T3 (t > 12)",
+          "Targets - total",
+          # "Targets - T1 (t 1-6)",
+          "Targets - T2 (7-12)",
+          "Targets - T3 (t > 12)"
         ),
         Value = c(
           fmt_big(steps_total),

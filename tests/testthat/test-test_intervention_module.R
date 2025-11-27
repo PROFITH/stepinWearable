@@ -11,6 +11,16 @@ TEMP_TEST_DIR <- tempdir()
 
 # Mock Data: A small, controlled data frame representing minute-level steps.
 # Assumes structure: timestamp (POSIXct), steps (integer)
+hr_values = 60:180
+hr_range_length <- length(hr_values)
+probabilities <- rep(0.002, hr_range_length)
+resting_indices <- which(hr_values >= 60 & hr_values <= 75)
+probabilities[resting_indices] <- 0.005 + (0.012 * (hr_values[resting_indices] - 60))
+moderate_indices <- which(hr_values >= 90 & hr_values <= 110)
+probabilities[moderate_indices] <- 0.004 + (0.008 * (1 - abs(hr_values[moderate_indices] - 100) / 10))
+peak_suppress_indices <- which(hr_values > 150)
+probabilities[peak_suppress_indices] <- 0.0001
+probabilities <- probabilities / sum(probabilities)
 mock_minute_data <- tibble(
   timestamp = force_tz(seq(
     ymd_hms("2024-05-01 00:00:00"), 
@@ -18,7 +28,9 @@ mock_minute_data <- tibble(
     by = "1 min"
   ), tzone = "Europe/Madrid"),
   steps = sample(c(0, 10, 80, 100, 120), size = 14 * 1440, replace = TRUE, 
-                 prob = c(0.7, 0.1, 0.1, 0.05, 0.05))
+                 prob = c(0.7, 0.1, 0.1, 0.05, 0.05)),
+  HeartRate = sample(60:180, size = 14 * 1440, replace = TRUE, 
+                     prob = probabilities)
 )
 
 # Mock State: A typical initial state (t=0) and a state after one intervention (t=1).
@@ -27,7 +39,10 @@ mock_initial_state <- list(
   last_X = NA_integer_,
   last_Y = 0L,
   last_Z = NA_integer_,
-  consecutive_fails = 0L
+  last_steps_factor = 1.0,
+  consecutive_fails = 0L,
+  consecutive_success = 0L
+  
 )
 
 mock_t1_state <- list(
@@ -35,7 +50,8 @@ mock_t1_state <- list(
   last_X = NA_integer_,
   last_Y = 0L,
   last_Z = NA_integer_,
-  consecutive_fails = 0L
+  consecutive_fails = 0L,
+  consecutive_success = 0L
 )
 
 # Mock KPI structure (assuming your kpis() function outputs this)
@@ -88,7 +104,8 @@ test_that("KPI calculation handles edge cases (NA/zero data)", {
                              steps_day = integer(),
                              steps_80plus = integer(),
                              steps_90plus = integer(),
-                             steps_100plus = integer())
+                             steps_100plus = integer(),
+                             valid_day = logical())
   kpis_empty <- kpis(empty_df)
   expect_true(is.na(kpis_empty$med_steps_day))
   expect_equal(kpis_empty$n_days, 0)
@@ -98,7 +115,8 @@ test_that("KPI calculation handles edge cases (NA/zero data)", {
                   steps_day = c(5000, NA_real_),
                   steps_80plus = c(20, NA_real_),
                   steps_90plus = c(10, NA_real_),
-                  steps_100plus = c(5, NA_real_))
+                  steps_100plus = c(5, NA_real_),
+                  valid_day = c(TRUE, FALSE))
   kpis_na <- stepinWearable:::kpis(na_df)
   expect_equal(kpis_na$med_steps_day, 5000)
 })
@@ -142,7 +160,7 @@ test_that("Decision engine selects correct key based on performance", {
   # Scenario 1: Initial state (t=0), very good performance
   X_factor = 1.05
   Y_inc = 5
-  res_initial_good <- stepinWearable:::decide_message(
+  res_initial_good <- decide_message(
     state = mock_initial_state,
     cur_k = mock_kpis,
     prev_k = NULL,         # No previous window
@@ -161,6 +179,8 @@ test_that("Decision engine selects correct key based on performance", {
   state_3fails <- mock_initial_state
   state_3fails$consecutive_fails <- 3L
   state_3fails$last_X <- 8000
+  state_3fails$last_steps_factor <- 1.1
+  state_3fails$last_minutes_inc <- 3
   state_3fails$history <- list(
     t_index           = 4,
     kpis              = mock_kpis,
@@ -169,7 +189,7 @@ test_that("Decision engine selects correct key based on performance", {
     target_cadence    = 90
   )
   
-  res_fails_bad <- stepinWearable:::decide_message(
+  res_fails_bad <- decide_message(
     state = state_3fails,
     cur_k = mock_kpis,
     prev_k = mock_kpis_old,
@@ -190,7 +210,9 @@ test_that("Decision engine selects correct key based on performance", {
   Y_inc = 3
   state_3fails <- mock_initial_state
   state_3fails$consecutive_fails <- 3L
-  state_3fails$last_X <- 8000
+  state_3fails$last_X <- 11000 * X_factor
+  state_3fails$last_steps_factor = X_factor
+  state_3fails$last_minutes_inc = Y_inc
   state_3fails$history <- list(
     t_index           = 4,
     kpis              = mock_kpis,
@@ -199,7 +221,7 @@ test_that("Decision engine selects correct key based on performance", {
     target_cadence    = 90
   )
   
-  res_fails_bad <- stepinWearable:::decide_message(
+  res_fails_bad <- decide_message(
     state = state_3fails,
     cur_k = mock_kpis,
     prev_k = mock_kpis_old,
@@ -208,13 +230,14 @@ test_that("Decision engine selects correct key based on performance", {
     minutes_inc = 5,
     t = 1
   )
+  
   expect_true(res_fails_bad$key %in% c("pasos2"))    # doesn't reach target
   expect_equal(res_fails_bad$consecutive_fails, state_3fails$consecutive_fails + 1L)  # 1 additional fail
   expect_true(grepl('Si hay algo que quiera comentarnos o cree', res_fails_bad$text))  # supportive msg appended
   
   # Scenario 3: Nodata (handled by the caller function, but good to ensure engine handles it)
   # The server handles nodata separately, but if kpis are all NA, the engine should fail gracefully
-  res_nodata <- stepinWearable:::decide_message(
+  res_nodata <- decide_message(
     state = mock_initial_state,
     cur_k = mock_kpis_nodata,
     prev_k = NULL,

@@ -16,8 +16,7 @@
 #'   \item Optionally saves raw and processed files to specified output folders.
 #' }
 #'
-#' @param file_path Character vector. One or more file paths to StepWatch CSV files.
-#' @param participant_id Character. Unique participant identifier, used in output filenames.
+#' @param stepwatch_download_dir Character vector. One or more file paths to StepWatch CSV files.
 #' @param timeseries_dir Character. Directory to save the processed time series.
 #'                       If \code{NULL}, the time series is not saved.
 #'
@@ -41,42 +40,58 @@
 #' }
 #'
 #' @export
-preprocess_stepwatch = function(file_path, participant_id, 
-                                timeseries_dir = NULL) {
+preprocess_stepwatch = function(stepwatch_download_dir = character(0),
+                                timeseries_dir = character(0)) {
   
-  # set up directory paths
-  if (is.null(timeseries_dir)) {
-    save_result = FALSE
-  } else {
-    save_result = TRUE
+  message("Pre-processing stepwatch data...")
+  # define directories if null
+  if (length(stepwatch_download_dir) == 0) {
+    if (dir.exists(STEPWATCH_DOWNLOAD_DIR)) {
+      stepwatch_download_dir = STEPWATCH_DOWNLOAD_DIR
+    } else {
+      stop("define directories for preprocessing")
+    }
+  }
+  if (length(timeseries_dir) == 0) {
+    if (dir.exists(WEARABLE_OUTPUT_DIR)) {
+      timeseries_dir = file.path(WEARABLE_OUTPUT_DIR, "output", "stepwatch", "meta")
+      if (!dir.exists(timeseries_dir)) dir.create(timeseries_dir)
+    } else {
+      stop("define directories for preprocessing")
+    }
   }
   
-  # save raw to folder
-  data = do.call(rbind, lapply(file_path, FUN = function(x) data.table::fread(x, data.table = FALSE)))
-
-  # read data in and r-bind
-  stepwatch = data[, grep("^BINNED", colnames(data))]
-  colnames(stepwatch) = ifelse(grepl("TIME", colnames(stepwatch)), "timestamp", "steps")
+  # loop through participants
+  participants = dir(stepwatch_download_dir, recursive = F, 
+                     full.names = TRUE, include.dirs = T)
   
-  # format time
-  stepwatch$timestamp = lubridate::force_tz(as.POSIXct(stepwatch$timestamp,
-                                                       format = "%Y-%m-%d %H:%M:%S"),
-                                            tzone = "")
-  stepwatch$steps = stepwatch$steps * 2
-  
-  # resample
-  stepwatch = resample_epoch(stepwatch)
-  
-  # save to file
-  if (save_result) {
-    nfiles = length(list.files(timeseries_dir))
+  for (i in seq_along(participants)) {
+    pfolder = file.path(participants[i], "10 Sec Bin")
+    file_path = dir(pfolder, pattern = "csv$", full.names = T)
+    # save raw to folder
+    data = do.call(rbind, lapply(file_path, FUN = function(x) data.table::fread(x, data.table = FALSE)))
+    
+    # read data in and r-bind
+    stepwatch = data[, grep("^BINNED", colnames(data))]
+    colnames(stepwatch) = ifelse(grepl("TIME", colnames(stepwatch)), "timestamp", "steps")
+    
+    # format time
+    stepwatch$timestamp = lubridate::force_tz(as.POSIXct(stepwatch$timestamp,
+                                                         format = "%Y-%m-%d %H:%M:%S"),
+                                              tzone = "")
+    stepwatch$steps = stepwatch$steps * 2
+    
+    # resample
+    stepwatch = resample_epoch(stepwatch)
+    
+    # save to file
+    date = format(stepwatch$timestamp[1], format = "%Y%m%d")
+    participant_id = basename(participants[i])
     tsfile = file.path(timeseries_dir, 
-                       paste0(participant_id, ".t", nfiles, ".RData"))
+                       paste0(participant_id, "-", date, ".RData"))
     save(stepwatch, file = tsfile)
-    message("Processed data saved to: ", tsfile)
   }
   
   # final message
   message("Processed data saved to: ", timeseries_dir)
-  return(stepwatch[, c("timestamp", "steps")])
 }

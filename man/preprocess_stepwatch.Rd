@@ -4,12 +4,13 @@
 \alias{preprocess_stepwatch}
 \title{Preprocess StepWatch CSV Files}
 \usage{
-preprocess_stepwatch(file_path, participant_id, timeseries_dir = NULL)
+preprocess_stepwatch(
+  stepwatch_download_dir = character(0),
+  timeseries_dir = character(0)
+)
 }
 \arguments{
-\item{file_path}{Character vector. One or more file paths to StepWatch CSV files.}
-
-\item{participant_id}{Character. Unique participant identifier, used in output filenames.}
+\item{stepwatch_download_dir}{Character vector. One or more file paths to StepWatch CSV files.}
 
 \item{timeseries_dir}{Character. Directory to save the processed time series.
 If \code{NULL}, the time series is not saved.}

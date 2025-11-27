@@ -50,24 +50,21 @@ load_messages <- local({
 #' The core function that determines the next step, minutes, and cadence goals
 #' (X, Y, Z) and selects the appropriate message template based on the current
 #' intervention phase and the participant's compliance in the last 2-week window.
-#'
-#' Logic Phases are:
-#' \itemize{
-#'   \item \code{post_basal} (0 reviews): Set initial step goal \code{X} based on current data.
-#'   \item \code{m1_3} (1-6 reviews): Focus on achieving step goal \code{X}.
-#'   \item \code{init_m4} (7 reviews): Introduce the intensity goal (\code{Y} and \code{Z}).
-#'   \item \code{m4_9} (>=8 reviews): Evaluate both step and intensity goals, allowing for escalation of cadence (\code{Z}).
-#' }
+#' 
+#' Logic phases are: (1) post_basal (t = 0) sets the initial step goal (X) based on 
+#' baseline assessment data; (2) m1_3 (t: 1:6) focuses on achieving step accumulation goals (X);
+#' (3) init_m4 (t = 7) introduces the intensity goal (Y minutes at a Z cadence);
+#' (4) m4_9 (t >= 8) evaluates both step accumulation and intensity goals, allowing for escalation.
 #'
 #' @param state A list representing the participant's historical intervention state (from \code{load_participant_state}), including \code{history}, \code{last_X}, \code{last_Y}, \code{last_Z}, and \code{consecutive_fails}.
 #' @param cur_k A list of KPIs calculated for the current 2-week window.
 #' @param prev_k A list of KPIs calculated for the previous 2-week window (or \code{NULL}).
-#' @param nombre Character string for the participant's name (used for message personalization).
-#' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5%).
+#' @param nombre Character string for the participant's name (used for message text).
+#' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).
 #' @param minutes_inc Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).
 #' @param t Integer t-index for the current 2-week window.
 #'
-#' @return A list containing:
+#' @returns A list containing:
 #' \itemize{
 #'   \item \code{key}: The message template key chosen (e.g., "ambos3").
 #'   \item \code{text}: The final rendered message text (Spanish).
@@ -77,7 +74,7 @@ load_messages <- local({
 #'
 #' @importFrom dplyr case_when
 #' @importFrom glue glue
-#' @noRd
+#' @export
 decide_message <- function(state, cur_k, prev_k, nombre,
                            steps_factor = 1.05, minutes_inc = 5L, t) {
   # load messages

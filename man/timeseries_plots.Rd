@@ -4,7 +4,15 @@
 \alias{timeseries_plots}
 \title{Plot a Time Series with Optional Diary Overlay}
 \usage{
-timeseries_plots(df, x, y, diary = NULL, interactive = FALSE)
+timeseries_plots(
+  df,
+  x = "timestamp",
+  y,
+  diary = NULL,
+  interactive = FALSE,
+  na_action = "gap",
+  tz = ""
+)
 }
 \arguments{
 \item{df}{A data frame containing the time series data.}
@@ -17,6 +25,10 @@ timeseries_plots(df, x, y, diary = NULL, interactive = FALSE)
 `start_time`, `end_time`, and `activity`. Times should be in Excel date format (numeric).}
 
 \item{interactive}{Logical; if TRUE, return a plotly interactive plot instead of a static ggplot.}
+
+\item{na_action}{method for handling NA values (not available for now).}
+
+\item{tz}{Character; timezone.}
 }
 \value{
 A `ggplot` or `plotly` object showing the time series, and if applicable, shaded diary intervals.
@@ -25,7 +37,4 @@ A `ggplot` or `plotly` object showing the time series, and if applicable, shaded
 This function creates a time series plot of a numeric signal (`y`) over time (`x`)
 with optional overlay of diary-based activity periods (e.g., sleep).
 You can choose between a static `ggplot2` version or an interactive `plotly` version.
-}
-\examples{
-# timeseries_plots(df = step_data, x = "timestamp", y = "steps", interactive = TRUE)
 }

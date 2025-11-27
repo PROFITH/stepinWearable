@@ -26,5 +26,5 @@ app_server <- function(input, output, session) {
   
   # 2. Assessment Module Server (Future)
   # When the Assessment module is implemented, its server function will be called here.
-  # # mod_assessment_server("assessment_1")
+  mod_assessment_server("assessment")
 }

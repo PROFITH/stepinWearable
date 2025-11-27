@@ -15,8 +15,7 @@
 #' }
 #' It assumes a sampling frequency of 15 Hz and uses preconfigured parameters suited for Verisense devices.
 #'
-#' @param file_path Character. Path to the input `.bin` file recorded by the Matrix device.
-#' @param participant_id Character. Identifier used to label the file and organize output directories.
+#' @param matrix_download_dir Character. Path to the directory in which the input `.bin` files recorded by the Matrix device are stored.
 #' @param timeseries_dir Character. Path to the output directory for storing processed GGIR results.
 #'
 #' @return A data frame with two columns:
@@ -32,25 +31,30 @@
 #' @examples
 #' \dontrun{
 #' steps_df <- preprocess_matrix(
-#'   file_path = "path/to/raw_matrix_file.bin",
-#'   participant_id = "001",
+#'   matrix_download_dir = "path/to/raw_matrix_dir/",
 #'   timeseries_dir = "data/processed/timeseries/matrix"
 #' )
 #' }
 #'
 #' @export
-preprocess_matrix <- function(file_path, participant_id, 
-                              timeseries_dir = NULL) {
+preprocess_matrix <- function(matrix_download_dir = character(0),
+                              timeseries_dir = character(0)) {
   message("Pre-processing matrix file with GGIR...")
   
-  # save raw to folder
-  rename = FALSE
-  if (grepl("^MATA", basename(file_path))) rename = TRUE
-  if (rename) {
-    nfiles = length(list.files(dirname(file_path)))
-    rawfile = file.path(dirname(file_path), 
-                        paste0(participant_id, ".t", nfiles, "_", basename(file_path)))
-    file.rename(file_path, rawfile)
+  # define directories if null
+  if (length(matrix_download_dir) == 0) {
+    if (dir.exists(MATRIX_DOWNLOAD_DIR)) {
+      matrix_download_dir = MATRIX_DOWNLOAD_DIR
+    } else {
+      stop("define directories for preprocessing")
+    }
+  }
+  if (length(timeseries_dir) == 0) {
+    if (dir.exists(WEARABLE_OUTPUT_DIR)) {
+      timeseries_dir = file.path(WEARABLE_OUTPUT_DIR, "output", "matrix")
+    } else {
+      stop("define directories for preprocessing")
+    }
   }
   
   # parameters for calculation of steps
@@ -70,53 +74,56 @@ preprocess_matrix <- function(file_path, participant_id,
   
   # in pre-processing, we do not use diary:
   GGIR::GGIR(
-    datadir = rawfile,
+    datadir = matrix_download_dir,
     outputdir = timeseries_dir,
-    studyname = "GGIR-matrix",
     do.report = c(),
     mode = 1,
-    overwrite = FALSE, ## temporal
+    overwrite = FALSE,
     myfun = myfun,
     visualreport = FALSE
   )
   
   # load timeseries
-  basicdir = file.path(timeseries_dir, "output_GGIR-matrix", "meta", "basic")
-  p1files = dir(basicdir, full.names = T)
-  file2load = grep(paste0("meta_", basename(rawfile), ".RData"),
-                   p1files, value = T, fixed = T)
-  M = NULL
-  load(file2load)
-  steps = M$metashort[, c("timestamp", "step_count")]
-  
-  # format time
-  steps$timestamp = as.POSIXct(steps$timestamp, format = "%Y-%m-%dT%H:%M:%S%z")
-  colnames(steps) = c("timestamp", "steps")
-  
-  # extract heart rate
-  message("Extracting heart rate...")
-  hr = GGIRread::readParmayMatrix(rawfile, output = "all", read_acc = TRUE,
-                                  read_gyro = FALSE, read_heart = TRUE)
-  hr = hr$data[hr$data$time %in% as.numeric(steps$timestamp), c("time", "hr")]
-  hr$timestamp = as.POSIXct(hr$time, tz = "Europe/Madrid")
-  hr = hr[, c("timestamp", "hr")]
-  
-  # save hr timeseries
-  if (!dir.exists(file.path(timeseries_dir, "output_hr-matrix"))) {
-    dir.create(file.path(timeseries_dir, "output_hr-matrix"))
-  }
-  save(hr,
-       file = file.path(timeseries_dir, "output_hr-matrix",
-                        paste0(participant_id, ".RData")))
-  
-  # aggregate to 60 seconds
-  steps = resample_epoch(steps)
-  
-  # return for visualization
   message("Matrix analysis completed.")
-  return(steps[, c("timestamp", "steps")])
 }
 
+# plot_matrix_timeseries <- function(participant_file) {
+#   # load timeseries
+#   basicdir = file.path(timeseries_dir, "output_matrix", "meta", "basic")
+#   p1files = dir(basicdir, full.names = T)
+#   file2load = grep(paste0("meta_", basename(rawfile), ".RData"),
+#                    p1files, value = T, fixed = T)
+#   M = NULL
+#   load(file2load)
+#   steps = M$metashort[, c("timestamp", "step_count")]
+#   
+#   # format time
+#   steps$timestamp = as.POSIXct(steps$timestamp, format = "%Y-%m-%dT%H:%M:%S%z")
+#   colnames(steps) = c("timestamp", "steps")
+#   
+#   # extract heart rate
+#   message("Extracting heart rate...")
+#   hr = GGIRread::readParmayMatrix(rawfile, output = "all", read_acc = TRUE,
+#                                   read_gyro = FALSE, read_heart = TRUE)
+#   hr = hr$data[hr$data$time %in% as.numeric(steps$timestamp), c("time", "hr")]
+#   hr$timestamp = as.POSIXct(hr$time, tz = "Europe/Madrid")
+#   hr = hr[, c("timestamp", "hr")]
+#   
+#   # save hr timeseries
+#   if (!dir.exists(file.path(timeseries_dir, "output_hr-matrix"))) {
+#     dir.create(file.path(timeseries_dir, "output_hr-matrix"))
+#   }
+#   save(hr,
+#        file = file.path(timeseries_dir, "output_hr-matrix",
+#                         paste0(participant_id, ".RData")))
+#   
+#   # aggregate to 60 seconds
+#   steps = resample_epoch(steps)
+#   
+#   # return for visualization
+#   message("Matrix analysis completed.")
+#   return(steps[, c("timestamp", "steps")])
+# }
 
 #' Finalize GGIR processing (parts 2:5) on matrix file and load reports
 #'
@@ -132,7 +139,7 @@ process_matrix <- function(timeseries_dir = NULL,
   
   # in pre-processing, we do not use diary:
   GGIR::GGIR(
-    datadir = "GGIR-matrix",
+    datadir = "matrix",
     outputdir = timeseries_dir,
     mode = 2:5,
     overwrite = FALSE, ## temporal
@@ -155,7 +162,7 @@ process_matrix <- function(timeseries_dir = NULL,
   )
   
   # load and return GGIR output
-  resultsdir = file.path(timeseries_dir, "output_GGIR-matrix", "results")
+  resultsdir = file.path(timeseries_dir, "output_matrix", "results")
   ggir_reports_paths = list.files(resultsdir, recursive = T, pattern = "*\\.csv$",
                                   full.names = TRUE)
   
