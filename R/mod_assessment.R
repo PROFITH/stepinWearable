@@ -235,7 +235,7 @@ mod_assessment_server <- function(id) {
         }
       }
       
-      if (!is.null(input$stepwatch_path)) {
+      if (!is.null(input$stepwatch_file)) {
         stepwatch_path <- file.path(STEPWATCH_META_DIR, input$stepwatch_file)
         if (!file.exists(stepwatch_path)) {
           showNotification(paste("stepwatch file not found:", stepwatch_path), type = "error")

@@ -871,10 +871,11 @@ mod_intervention_server <- function(id) {
       }
       
       # KPIs on the *selected* current and previous windows
+      t_index = as.integer(input$t_index_input)
       curk <- kpis(cur_all)
-      prevk <- if (length(st$history) > 0) st$history[[input$t_index_input]]$kpis else NULL
-      prevstepsfactor <- if (length(st$history) > 0) st$history[[input$t_index_input]]$steps_factor else NULL
-      prevminutesinc <- if (length(st$history) > 0) st$history[[input$t_index_input]]$minutes_inc else NULL
+      prevk <- if (length(st$history) > 0 && t_index > 0) st$history[[input$t_index_input]]$kpis else NULL
+      prevstepsfactor <- if (length(st$history) > 0 && t_index > 0) st$history[[input$t_index_input]]$steps_factor else NULL
+      prevminutesinc <- if (length(st$history) > 0 && t_index > 0) st$history[[input$t_index_input]]$minutes_inc else NULL
       
       # Researcher-adjusted factors
       # Initial recommended values based on ok flags

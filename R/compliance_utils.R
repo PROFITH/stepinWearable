@@ -31,7 +31,8 @@ kpis <- function(win) {
     med_steps_90plus  = median(win$steps_90plus,  na.rm = TRUE),
     med_steps_100plus = median(win$steps_100plus, na.rm = TRUE),
     total_steps = sum(win$steps_day, na.rm = TRUE),
-    total_steps_alldays = sum(win_all$steps_day, na.rm = TRUE)
+    total_steps_alldays = sum(win_all$steps_day, na.rm = TRUE),
+    n_days_alldays = dplyr::n_distinct(win_all$date)
   )
 }
 

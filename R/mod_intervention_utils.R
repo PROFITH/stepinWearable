@@ -21,7 +21,7 @@ NULL
 #' @param tz Local timezone for day anchoring (default "Europe/Madrid").
 #' @param steps_threshold Integer, daily step threshold for valid SC day (default 500).
 #' @param gap_allowance Integer, maximum allowed consecutive minutes without HR (default 90).
-#' @param required_hr_minutes Integer, HR minutes required per day (default 600 = 10h).
+#' @param required_hr_minutes Integer, HR minutes required per day (default 480 = 8h).
 #'
 #' @return Tibble with daily totals plus:
 #'   wear_minutes_hr, max_hr_gap_min, valid_hr_day, valid_sc_day
@@ -63,7 +63,7 @@ daily_summary <- function(df,
   # helper: evaluate HR criterion for a single day
   eval_hr_day <- function(day_df, day,
                           tz = "Europe/Madrid",
-                          required_hr_minutes = 600L,
+                          required_hr_minutes = 480L,
                           gap_allowance = 90L) {
     # Build the full minute index for the day in local tz
     day_start <- as.POSIXct(paste0(day, " 00:00:00"), tz = tz)
@@ -141,7 +141,8 @@ daily_summary <- function(df,
     dplyr::group_modify(~{
       day <- .y$date[[1]]
       res <- eval_hr_day(.x, day = day, tz = "Europe/Madrid",
-                         required_hr_minutes = 600L, gap_allowance = 90L)
+                         required_hr_minutes = required_hr_minutes, 
+                         gap_allowance = 90L)
       data.frame(
         wear_minutes_hr_raw      = res$wear_minutes_hr_raw,
         wear_minutes_hr_adjusted = res$wear_minutes_hr_adjusted,
