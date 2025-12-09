@@ -647,7 +647,7 @@ mod_assessment_server <- function(id) {
       log_path <- file.path(log_dir, "ggir_sleep_log.csv")
       
       # 1) Write GGIR sleep log
-      try({
+      
         # build formatted individual log
         log_i = data.frame(
           start_date = format(diary_segments()$start, format = "%Y-%m-%d"),
@@ -661,6 +661,7 @@ mod_assessment_server <- function(id) {
         ggir_log = ggir_sleep_log(diary_segments(), input$matrix_file)
         
         # need overwriting?
+        participant_id = input$matrix_file
         overwrite_needed = FALSE
         log_available = FALSE
         if (file.exists(log_path)) {
@@ -690,7 +691,6 @@ mod_assessment_server <- function(id) {
                            row.names = FALSE, na = "")
           utils::write.csv(ggir_log, file = log_path, row.names = FALSE, na = "")
         }
-      }, silent = TRUE)
       showNotification(paste("Diary saved at", dirname(log_path)), 
                        type = "message", duration = 6)
     })
