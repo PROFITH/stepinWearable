@@ -23,7 +23,7 @@ missing minutes are filled during evaluation.}
 
 \item{gap_allowance}{Integer, maximum allowed consecutive minutes without HR (default 90).}
 
-\item{required_hr_minutes}{Integer, HR minutes required per day (default 600 = 10h).}
+\item{required_hr_minutes}{Integer, HR minutes required per day (default 480 = 8h).}
 }
 \value{
 Tibble with daily totals plus:
