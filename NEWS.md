@@ -1,3 +1,33 @@
+# stepinWearable 2.0.0
+
+- **Assessment module** developed:
+    - Tools to preprocess, check, and build sleep logs.
+    - Integration of sleep-related data streams into the package ecosystem.
+    - Ensures participant IDs are properly handled and validated during sleep-log processing.
+- Required valid-day threshold (Fitbit) changed to 480 minutes (8h)
+- KPI calculations updated, now includes n_days_alldays.
+- Minor fixes:
+    - Removed a try block that previouslu masked write-log failures.
+    - Ensures missing participant IDs cause explicit errors instead of silent failures.
+    - Corrected index overwrite issues when t index = 0.
+    - Cleaned up step-processing and nonwera logic.
+    - Improved reliability of file handling and log generation
+    - Updated documentation of functions.
+
+# stepinWearable 1.0.0
+
+- First complete, stable implementation of the **intervention module**:
+    - Rounded daily step targets to 10s for step counts and 5-min for cadence.
+    - Implemented consecutive success logic with corresponding message pipeline.
+    - Improved participant summary state generation.
+    - Fitbit: Refined definition of valid vs. nonvalid days, including nonwear detection based on heart rate.
+- Final refinements to the user-facing application prior to deployment.
+- Updated vignette to include support for the nonwear detection algorithm.
+- Internal polishing and clean-up for release.
+
+### Notes
+- This version corresponds to the initial deployed version of the package used in the field phase of the Step-IN project.
+
 # stepinWearable 0.1.0
 
 Initial release of the `stepinWearable` package.
