@@ -1,3 +1,7 @@
+# stepinWearable 2.0.1
+
+- Cadence step progression has been incremented from 100 steps/min up to 120 steps/min.
+
 # stepinWearable 2.0.0
 
 - **Assessment module** developed:
