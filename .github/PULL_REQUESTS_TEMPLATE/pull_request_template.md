@@ -1,5 +1,7 @@
 ## Description
+
 ## Checklist
+
 Before submitting this PR, please ensure you have completed the following:
 
 - [ ] **NEWS:** I have updated the `NEWS.md` file.
@@ -9,6 +11,7 @@ Before submitting this PR, please ensure you have completed the following:
 - [ ] **Self-review:** I have performed a self-review of my own code.
 
 ## Type of change
+
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
