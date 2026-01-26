@@ -132,6 +132,8 @@ daily_summary <- function(df,
       steps_80plus  = sum(steps >= 80,  na.rm = TRUE),
       steps_90plus  = sum(steps >= 90,  na.rm = TRUE),
       steps_100plus = sum(steps >= 100, na.rm = TRUE),
+      steps_110plus = sum(steps >= 110, na.rm = TRUE),
+      steps_120plus = sum(steps >= 120, na.rm = TRUE),
       .groups = "drop"
     )
  
