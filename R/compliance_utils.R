@@ -17,7 +17,8 @@ NULL
 #' @param win A daily summary data frame for the target window.
 #'
 #' @return A list containing median values: \code{med_steps_day}, \code{med_steps_80plus},
-#'   \code{med_steps_90plus}, \code{med_steps_100plus}.
+#'   \code{med_steps_90plus}, \code{med_steps_100plus},
+#'   \code{med_steps_110plus}, \code{med_steps_120plus}.
 #'
 #' @importFrom stats median
 #' @export
@@ -30,6 +31,8 @@ kpis <- function(win) {
     med_steps_80plus  = median(win$steps_80plus,  na.rm = TRUE),
     med_steps_90plus  = median(win$steps_90plus,  na.rm = TRUE),
     med_steps_100plus = median(win$steps_100plus, na.rm = TRUE),
+    med_steps_110plus = median(win$steps_110plus, na.rm = TRUE),
+    med_steps_120plus = median(win$steps_120plus, na.rm = TRUE),
     total_steps = sum(win$steps_day, na.rm = TRUE),
     total_steps_alldays = sum(win_all$steps_day, na.rm = TRUE),
     n_days_alldays = dplyr::n_distinct(win_all$date)
@@ -94,3 +97,28 @@ should_escalate_from_80 <- function(cur_med_steps_80plus)  cur_med_steps_80plus 
 #'
 #' @return Logical.
 should_escalate_from_90 <- function(cur_med_steps_90plus)  cur_med_steps_90plus  >= 15  # escalate to ≥100
+
+
+#' Check if Cadence Z=100 Should Escalate to Z=110
+#'
+#' @description
+#' Rule check: Should escalate from Z=100 to Z=110 if the median minutes at 100+
+#' are sufficiently high (e.g., >= 45 minutes).
+#'
+#' @param cur_med_steps_100plus Current median minutes at 100+ steps/min.
+#'
+#' @return Logical.
+should_escalate_from_100 <- function(cur_med_steps_100plus)  cur_med_steps_100plus  >= 45  # escalate to ≥110
+
+
+#' Check if Cadence Z=110 Should Escalate to Z=120
+#'
+#' @description
+#' Rule check: Should escalate from Z=110 to Z=120 if the median minutes at 110+
+#' are sufficiently high (e.g., >= 45 minutes).
+#'
+#' @param cur_med_steps_110plus Current median minutes at 110+ steps/min.
+#'
+#' @return Logical.
+should_escalate_from_110 <- function(cur_med_steps_110plus)  cur_med_steps_110plus  >= 45  # escalate to ≥120
+
