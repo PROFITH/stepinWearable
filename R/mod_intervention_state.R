@@ -43,24 +43,24 @@ NULL
 #'     See \emph{History entry fields} below for the structure of each entry.}
 #'   \item{last_X}{Numeric. Last saved target for \strong{daily steps} (X).}
 #'   \item{last_Y}{Integer. Last saved target for \strong{minutes/day} at cadence Z (Y).}
-#'   \item{last_Z}{Integer. Last saved \strong{cadence threshold} (Z), one of 80, 90, or 100.}
+#'   \item{last_Z}{Integer. Last saved \strong{cadence threshold} (Z), one of 80, 90, 100, 110 or 120.}
 #'   \item{consecutive_fails}{Integer. Current streak of consecutive failed cycles.}
 #' }
 #'
 #' @section History entry fields:
 #' Each element of `history` is a named list with:
 #' \describe{
-#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..7 = months 1–3, 8+ = months 4–9).}
+#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..5 = months 1–3, 6+ = months 4–9).}
 #'   \item{date_str}{Character. Start date (YYYYMMDD) of the corresponding minute series.}
 #'   \item{start_date}{Date. First day of the 14-day analysis window used for this entry.}
 #'   \item{end_date}{Date. Last day of the 14-day analysis window used for this entry.}
 #'   \item{kpis}{Named list of window medians used by the decision engine, typically:
-#'     `med_steps_day`, `med_steps_80plus`, `med_steps_90plus`, `med_steps_100plus`.}
+#'     `med_steps_day`, `med_steps_80plus`, `med_steps_90plus`, `med_steps_100plus`, `med_steps_110plus`, `med_steps_120plus`.}
 #'   \item{steps_factor}{Numeric. Multiplication factor applied when computing the next X.}
 #'   \item{minutes_inc}{Integer. Minute increment applied when computing/adjusting Y.}
 #'   \item{target_steps}{Numeric. Next \strong{X} target (steps/day).}
 #'   \item{target_minutes}{Integer. Next \strong{Y} target (minutes/day at cadence Z).}
-#'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100 steps/min).}
+#'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100, 110, 120 steps/min).}
 #'   \item{auto_message_key}{Character. Template key chosen by the engine
 #'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`).}
 #'   \item{final_message_key}{Character. Template key finally used/shown (may differ if overridden).}
@@ -81,7 +81,7 @@ load_participant_state <- function(outdir, participant_id) {
     history = list(),                # list of past 2-week review summaries
     last_X = NA_integer_,            # last daily steps target
     last_Y = 0L,                     # last minutes/day at Z target
-    last_Z = NA_integer_,            # last cadence target (80/90/100)
+    last_Z = NA_integer_,            # last cadence target (80/90/100/110/120)
     last_steps_factor = NA,          # last steps factor used in the calculation of previous target
     last_minutes_inc = NA,           # last minutes increment used in the calculation of previous target
     consecutive_fails = 0L,          # consecutive review failures
