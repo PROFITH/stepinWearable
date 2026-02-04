@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 # stepinWearable 2.0.1
 
 - Cadence step progression has been incremented from 100 steps/min up to 120 steps/min.
+=======
+# stepinWearable (development version)
+
+- Added a Pull Request template to standardize contributions and ensure code quality.
+- Implemented GitHub Branch Protection rules and `CODEOWNERS` to formalize the review process.
+- Added Issue templates for bug reports and feature requests.
+>>>>>>> 6a6f36f1a9939abfb1d43645d401262d19f9c326
 
 # stepinWearable 2.0.0
 
@@ -14,7 +22,7 @@
     - Removed a try block that previouslu masked write-log failures.
     - Ensures missing participant IDs cause explicit errors instead of silent failures.
     - Corrected index overwrite issues when t index = 0.
-    - Cleaned up step-processing and nonwera logic.
+    - Cleaned up step-processing and nonwear logic.
     - Improved reliability of file handling and log generation
     - Updated documentation of functions.
 
