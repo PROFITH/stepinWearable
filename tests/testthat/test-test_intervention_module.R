@@ -71,8 +71,8 @@ mock_kpis_old <- tibble::tibble(
   med_steps_80plus = 50,
   med_steps_90plus = 40,
   med_steps_100plus = 30,
-  med_steps_100plus = 10,
-  med_steps_100plus = 5
+  med_steps_110plus = 10,
+  med_steps_120plus = 5
 )
 
 mock_kpis_nodata <- tibble::tibble(
