@@ -31,6 +31,6 @@ Tibble with daily totals plus:
 }
 \description{
 Aggregates minute-level data to daily totals and flags valid/invalid days by:
-  1) HR criterion: >= 10h of heart-rate minutes with max consecutive HR gap <= 90 min
+  1) HR criterion: >= 8h of heart-rate minutes with max consecutive HR gap <= 90 min
   2) Steps criterion: >= steps_threshold steps in the day (default 500)
 }

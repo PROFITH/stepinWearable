@@ -11,7 +11,8 @@ kpis(win)
 }
 \value{
 A list containing median values: \code{med_steps_day}, \code{med_steps_80plus},
-  \code{med_steps_90plus}, \code{med_steps_100plus}.
+  \code{med_steps_90plus}, \code{med_steps_100plus},
+  \code{med_steps_110plus}, \code{med_steps_120plus}.
 }
 \description{
 Calculates the key median metrics for a given analysis window (steps and minutes
