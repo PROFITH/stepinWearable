@@ -84,7 +84,7 @@ Top-level fields:
 | `history`           | list    | One entry per cycle (*t*-index). See below. |
 | `last_X`            | numeric | Last target for daily steps (X).            |
 | `last_Y`            | integer | Last target minutes/day at cadence Z (Y).   |
-| `last_Z`            | integer | Last cadence threshold Z (80, 90, or 100).  |
+| `last_Z`            | integer | Last cadence threshold Z (80/90/100/110/120)|
 | `consecutive_fails` | integer | Current streak of failed cycles.            |
 
 Each element of `history` is a named list with:
@@ -95,12 +95,12 @@ Each element of `history` is a named list with:
 | `date_str` | character | `YYYYMMDD` start date of the underlying minute series. |
 | `start_date` | Date | First day of the 14-day analysis window. |
 | `end_date` | Date | Last day of the 14-day analysis window. |
-| `kpis` | list | Window KPIs (e.g., `med_steps_day`, `med_steps_80plus/90plus/100plus`). |
+| `kpis` | list | Window KPIs (e.g., `med_steps_day`, `med_steps_80plus/90plus/100plus/110plus/120plus`). |
 | `steps_factor` | numeric | Factor used to compute next X. |
 | `minutes_inc` | integer | Minute increment applied to Y. |
 | `target_steps` | numeric | Next X (steps/day). |
 | `target_minutes` | integer | Next Y (minutes/day at Z). |
-| `target_cadence` | integer | Next Z (80, 90, 100). |
+| `target_cadence` | integer | Next Z (80, 90, 100, 110, 120). |
 | `auto_message_key` | character | Template key picked by the engine. |
 | `final_message_key` | character | Template key actually used (after override, if any). |
 | `manual_override` | logical | `TRUE` if final key differs from auto. |
@@ -132,6 +132,8 @@ A `data.frame` with:
 | `steps_80plus`  | num  | Minutes/day at cadence ≥ 80 spm.  |
 | `steps_90plus`  | num  | Minutes/day at cadence ≥ 90 spm.  |
 | `steps_100plus` | num  | Minutes/day at cadence ≥ 100 spm. |
+| `steps_110plus` | num  | Minutes/day at cadence ≥ 110 spm. |
+| `steps_120plus` | num  | Minutes/day at cadence ≥ 120 spm. |
 
 ### 3) `medians` (precomputed convenience values)
 
@@ -141,7 +143,8 @@ A named list:
 
 -   `median_steps_day`,
 
--   `median_steps_80plus`, `median_steps_90plus`, `median_steps_100plus`.
+-   `median_steps_80plus`, `median_steps_90plus`, `median_steps_100plus`,
+    `median_steps_110plus`, `median_steps_120plus`.
 
 ## Filenames and conventions (summary)
 

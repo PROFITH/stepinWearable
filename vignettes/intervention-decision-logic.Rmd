@@ -29,7 +29,7 @@ library(lubridate)
 
 This article documents how the intervention module decides **which
 message** template to send and **how to set or adjust** the targets: X
-(steps/day), Y (minutes/day), and Z (target cadence: 80/90/100 steps/min
+(steps/day), Y (minutes/day), and Z (target cadence: 80/90/100/110/120 steps/min
 for Y).
 
 ### Analysis Windows
@@ -50,8 +50,7 @@ KPIs are calculated using the `kpis()` function over the daily summary
     to 'median' for consistency with code)
 
 -   `median_steps_80plus`, `median_steps_90plus`,
-    `median_steps_100plus`: **Median** **minutes** per day at ≥80, ≥90,
-    and ≥100 steps/min, respectively.
+    `median_steps_100plus`, `median_steps_110plus`, `median_steps_120plus`: **Median** **minutes** per day at ≥80, ≥90, ≥100, ≥110 and ≥120 steps/min, respectively.
 
 ### Compliance Rules
 
@@ -77,13 +76,13 @@ of the file being processed:
 -   t = 0 → **`post_basal`**: The very first message (following
     baseline).
 
--   t: 1−6 → **`m1_3`**: Intervention months 1–3 (focused only on steps
+-   t: 1−4 → **`m1_3`**: Intervention months 1–3 (focused only on steps
     accumulation).
 
--   t = 7 → **`init_m4`**: Initialization of intensity phase (introduces
+-   t = 5 → **`init_m4`**: Initialization of intensity phase (introduces
     Y min at a Z cadence target).
 
--   t ≥8 → **`m4_9`**: Intervention months 4–9 (steps + intensity with
+-   t ≥6 → **`m4_9`**: Intervention months 4–9 (steps + intensity with
     potential for cadence scaling).
 
 ### Phase I (post_basal)
@@ -103,7 +102,7 @@ during the baseline 14-day window recording: \$\$
 ### Phase II (m1_3)
 
 From there, every two weeks, the user will download a new recording from
-the Fitbit. Months 1 to 3 (t-indices from 1 to 6) are focused on
+the Fitbit. Months 1 to 3 (t-indices from 1 to 4) are focused on
 increasing the volume of steps per day (X). After each recording is
 processed, the user can generate a message to propose the next target,
 which is:
@@ -125,19 +124,19 @@ day (Y) walking at a given cadence (Z). To decide the initial target,
 the process would explore the current 14-day window and set the target
 as follows:
 
--   If `median_steps_100plus` ≥ 5\*, the target is the next integer
-    multiple of 5 to `median_steps_100plus` at a cadence of 100
-    steps/min (e.g., if participant accumulates a median of 17 min/day
-    at 100 steps/minute, then the target would be Y = 20, Z = 100).
+-   If `median_steps_110plus` ≥ 45\*, the target is the next integer
+    multiple of 5 to `median_steps_120plus` at a cadence of 120
+    steps/min (e.g., if participant accumulates a median of 47 min/day
+    at 120 steps/minute, then the target would be Y = 50, Z = 120).
 
--   Else, if `median_steps_90plus` ≥ 15\*, the target is set as Y = 5, Z
-    = 100.
+-   Else, if `median_steps_100plus` ≥ 45\*, the target is the next integer
+    multiple of 5 to `median_steps_110plus` at a cadence of 110 steps/min.
 
--   Else, if `median_steps_90plus` ≥ 5\*, the target is the next integer
-    multiple of 5 to `median_steps_90plus` at a cadence of 90 steps/min
+-   Else, if `median_steps_90plus` ≥ 15\*, the target is the next integer
+    multiple of 5 to `median_steps_100plus` at a cadence of 100 steps/min.
 
--   Else, if `median_steps_80plus` ≥ 15\*, the target is set as Y = 5, Z
-    = 90.
+-   Else, if `median_steps_80plus` ≥ 15\*, the target is the next integer
+    multiple of 5 to `median_steps_90plus` at a cadence of 90 steps/min.
 
 -   Else, the target is the next integer multiple of 5 to
     `median_steps_80plus` at a cadence of 80 steps/min
@@ -153,10 +152,16 @@ From there, the cadence target (Z) is scaled up if the participant
 successfully met the previous target:
 
 -   If Z = 80 and `median_steps_80plus` ≥ 15 minutes → Next Z = 90
-    steps/min and Y = 5 min/day.
+    steps/min and Y = the next integer multiple of 5 to `median_steps_90plus`.
 
 -   If Z = 90 and `median_steps_90plus` ≥ 15 minutes → Next Z = 100
-    steps/min and Y = 5 min/day.
+    steps/min and Y = the next integer multiple of 5 to `median_steps_100plus`.
+    
+-   If Z = 100 and `median_steps_100plus` ≥ 45 minutes → Next Z = 110
+    steps/min and Y = the next integer multiple of 5 to `median_steps_110plus`.
+    
+-   If Z = 110 and `median_steps_110plus` ≥ 45 minutes → Next Z = 120
+    steps/min and Y = the next integer multiple of 5 to `median_steps_120plus`.
 
 Otherwise, progression of Y and Z follows the same logic as in Phase
 III, considering that if participant meets the previous target, a new
@@ -178,7 +183,7 @@ and the saved targets are **not updated**.
 
 -   `daily_summary(df)`: Converts the minute-level series (`timestamp`,
     `steps`) to a daily summary, including `steps_day`, `steps_80plus`,
-    `steps_90plus`, and `steps_100plus`.
+    `steps_90plus`, `steps_100plus`, `steps_110plus`, and `steps_120plus`.
 
 -   `select_windows(dsum, start_date, end_date)`: Constructs the
     **Current Window** (start–end) and the **Previous Window** (same
@@ -344,7 +349,7 @@ When the user clicks **Save State** in the module, two actions occur:
 ## Quick References
 
 -   `?daily_summary` — Daily summary with total steps and minutes at
-    ≥80/90/100.
+    ≥80/90/100/110/120.
 
 -   `?select_windows` — Construction of the current and previous
     analysis windows.
