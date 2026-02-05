@@ -2,9 +2,7 @@
 # stepinWearable 2.0.1
 
 - Cadence step progression has been incremented from 100 steps/min up to 120 steps/min.
-=======
-# stepinWearable (development version)
-
+- Month 4 start has been corrected to t = 5, ensuring the first cadence goal is issued at this point (t = 5).
 - Added a Pull Request template to standardize contributions and ensure code quality.
 - Implemented GitHub Branch Protection rules and `CODEOWNERS` to formalize the review process.
 - Added Issue templates for bug reports and feature requests.
@@ -19,7 +17,7 @@
 - Required valid-day threshold (Fitbit) changed to 480 minutes (8h)
 - KPI calculations updated, now includes n_days_alldays.
 - Minor fixes:
-    - Removed a try block that previouslu masked write-log failures.
+    - Removed a try block that previously masked write-log failures.
     - Ensures missing participant IDs cause explicit errors instead of silent failures.
     - Corrected index overwrite issues when t index = 0.
     - Cleaned up step-processing and nonwear logic.
