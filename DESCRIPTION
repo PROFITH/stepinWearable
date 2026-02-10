@@ -1,12 +1,18 @@
 Package: stepinWearable
 Title: Step-IN Wearable Data Management App
-Version: 2.0.0
-Authors@R: 
+Version: 2.0.1
+Authors@R: c(
     person(given = "Jairo H.",
            family = "Migueles",
            role = c("aut", "cre"),
            email = "jairo@jhmigueles.com", 
+           comment = "PROFITH Research Group"), 
+    person(given = "Emilio J.",
+           family = "Barranco-Moreno",
+           role = "ctb",
+           email = "emilio.barranco@ugr.es",
            comment = "PROFITH Research Group")
+ )
 Description: A Shiny app for uploading, validating and processing data from Fitbit, StepWatch, Matrix, and diaries collected in the framework of the STEP-IN project at the University of Granada (Spain).
 License: GPL (>= 3)
 Depends:

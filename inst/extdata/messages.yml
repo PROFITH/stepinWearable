@@ -14,6 +14,7 @@ templates:
     📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo en otro momento.
 
     📱 Le animamos a entrar cada día en la *plataforma HealthyChronos* desde su móvil, donde podrá ver sus pasos diarios y su meta semanal.
+    
     ¡Ánimo en esta primera etapa! 💪
 
     Estamos a su disposición para cualquier duda.
@@ -29,7 +30,7 @@ templates:
 
     ➡️ Su nuevo *objetivo* para las próximas dos semanas será caminar *{X} pasos al día* 👣.
 
-    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil.
 
     📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
@@ -47,10 +48,12 @@ templates:
     Hemos revisado sus pasos de las últimas dos semanas y hemos comprobado que *no ha alcanzado su objetivo*. No se preocupe, esto puede ocurrir y forma parte del proceso.
 
     ➡️ Para las próximas dos semanas, le proponemos mantener el mismo *objetivo*: caminar *{X} pasos al día* 👣.
-
+    
+    Aquí le dejamos algunas ideas que pueden ayudarle a dar más pasos a lo largo del día:
+    
     {tips_pasos}
 
-    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil.
 
     📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
@@ -67,17 +70,19 @@ templates:
 
     Nos alegra informarle de que *ha alcanzado su objetivo*. ¡Enhorabuena por su esfuerzo y constancia! 🎉
 
-    A partir de ahora, además de contar los *pasos* (volumen), vamos a fijarnos también en el *ritmo* (intensidad).
+    A partir de ahora, además de contar los *pasos que da cada día* (volumen), vamos a fijarnos también en el *ritmo al que camina* (intensidad). Aumentando poco a poco la intensidad de su actividad, pretendemos que mejore su forma física, salud y bienestar 💙.
 
     ➡️ Para las próximas dos semanas, le proponemos *dos objetivos*:
     - Caminar *{X} pasos al día* 👣
-    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos/min*.
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
 
-    📱 Revise sus gráficos de “pasos” y “cadencia de pasos” en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: lo importante es la *media semanal*.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
     Le animamos a seguir así 💪
+    
+    Estamos a su disposición para cualquier duda.
 
     Un saludo,
 
@@ -86,21 +91,25 @@ templates:
   ambos2: |-
     Hola {nombre},
 
-    Hemos revisado sus pasos de las últimas dos semanas y hemos comprobado que *todavía no ha alcanzado el objetivo planteado*. No se preocupe.
+    Hemos revisado sus pasos de las últimas dos semanas y hemos comprobado que *todavía no ha alcanzado el objetivo planteado*. No se preocupe, esto puede ocurrir y forma parte del proceso. 
 
-    A partir de ahora miraremos también el *ritmo* (intensidad).
+    A partir de ahora, además de contar los *pasos que da cada día* (volumen), vamos a fijarnos también en el *ritmo al que camina* (intensidad). Aumentando poco a poco la intensidad de su actividad pretendemos que mejore su forma física, salud y bienestar 💙.
 
     ➡️ Para las próximas dos semanas, le proponemos *dos objetivos*:
     - Caminar *{X} pasos al día* 👣
-    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos/min*.
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
+    
+    Aquí le dejamos algunas ideas que pueden ayudarle a dar más pasos a lo largo del día:
 
     {tips_pasos}
 
-    📱 Revise sus gráficos de “pasos” y “cadencia de pasos” en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: lo importante es la *media semanal*.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
     Le animamos a seguir así 💪
+    
+    Estamos a su disposición para cualquier duda.
 
     Un saludo,
 
@@ -109,17 +118,19 @@ templates:
   ambos3: |-
     Hola {nombre},
 
-    *Ha alcanzado sus objetivos* de pasos y minutos a paso rápido. ¡Enhorabuena! 🎉
+    Nos alegra informarle de que *ha alcanzado sus objetivos* propuestos de pasos y minutos al día caminando a paso rápido ¡Enhorabuena por su esfuerzo y constancia! 🎉
 
-    ➡️ Nuevos objetivos (próximas 2 semanas):
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
+    ➡️ Sus nuevos objetivos para las *próximas dos semanas* serán:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
 
-    📱 Puede ver su progreso en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: la *media semanal* es lo importante.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
-    ¡Siga así! 💪
+    Le animamos a seguir así 💪
+    
+    Estamos a su disposición para cualquier duda.
 
     Un saludo,
 
@@ -128,36 +139,47 @@ templates:
   ambos4: |-
     Hola {nombre},
 
-    *Ha alcanzado sus objetivos* y gracias a su progreso vamos a dar un *nuevo paso*: aumentamos el ritmo.
+    Nos alegra informarle de que *ha alcanzado sus objetivos* propuestos de pasos y minutos al día caminando a paso rápido. ¡Enhorabuena por su esfuerzo y constancia! 🎉
 
-    ➡️ A partir de ahora su meta de intensidad será *{Z} pasos/min*. En este nuevo nivel, empezará con *{Y} min/día* para facilitar la adaptación.
+    ➡️ Gracias a sus progresos, ha llegado el momento de dar un *nuevo paso adelante* en el programa STEP-IN: vamos a aumentar el ritmo de la marcha. Esto significa que, a partir de ahora, su meta será caminar a *{Z} pasos por minuto*. En este nuevo nivel comenzará con menos minutos diarios, lo que le permitirá adaptarse a este ritmo más rápido antes de seguir progresando.
 
-    Sus objetivos (próximas 2 semanas):
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
+    Sus *nuevos objetivos para las próximas dos semanas* son:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
 
-    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a las gráficas de “pasos” y “cadencia de pasos”.
 
-    📊 Recuerde: la media semanal cuenta.
+    📊 Recuerde: lo importante es la media semanal. Si algún día camina menos, puede compensarlo en otro momento.
 
-    ¡Felicidades por llegar hasta aquí! 💪
+    💪 ¡Felicidades por llegar hasta aquí, siga así!
+    
+    Estamos a su disposición para cualquier duda.
+    
+    Un saludo,
+    
+    *Equipo STEP-IN*
+
 
   ambos5: |-
     Hola {nombre},
 
-    En las últimas dos semanas *no ha alcanzado sus objetivos*. No se preocupe, es parte del proceso.
+    Hemos revisado sus pasos y los minutos que ha caminado a paso rápido en las últimas dos semanas y hemos comprobado que *no ha alcanzado sus objetivos.* No se preocupe, esto puede ocurrir y forma parte del proceso. 
 
-    ➡️ Para las próximas dos semanas, mantenemos:
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
+    ➡️ Para las próximas dos semanas, le proponemos mantener los mismos *objetivos:*
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
+    
+    Aquí le dejamos algunas ideas que pueden ayudarle a dar más pasos a lo largo del día y caminar a un ritmo más rápido:
 
     {tips_mixto}
 
-    📱 Consulte su progreso en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: la *media semanal*.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
-    ¡Ánimo! 💪
+    ¡Le animamos a seguir avanzando! 💪
+    
+    Estamos a su disposición para cualquier duda.
 
     Un saludo,
 
@@ -166,69 +188,108 @@ templates:
   ambos6: |-
     Hola {nombre},
 
-    *Ha logrado el objetivo de pasos* ¡Muy bien! 🎉
+    Hemos revisado sus datos de las últimas dos semanas y nos alegra informarle de que *ha conseguido su objetivo de pasos diarios.* ¡Muy buen trabajo! 🎉
 
-    En cuanto al tiempo a paso rápido, aún no alcanzó el objetivo.
+    Sin embargo, en cuanto al tiempo caminando a paso rápido, no ha alcanzado el objetivo propuesto. No se preocupe, esto es normal y forma parte del proceso.
 
-    ➡️ Próximas 2 semanas:
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
+    ➡️ Para las *próximas dos semanas*, le proponemos:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
+    
+    Además, aquí le damos algunas estrategias para conseguir, poco a poco, un ritmo más rápido al caminar:
 
     {tips_intensidad}
 
-    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: la *media semanal*.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
+    
+    ¡Le animamos a seguir avanzando! 💪
+    
+    Estamos a su disposición para cualquier duda.
 
-    ¡A seguir! 💪
+    Un saludo,
+    
+    *Equipo STEP IN*
 
   ambos7: |-
     Hola {nombre},
 
-    *Ha conseguido el tiempo a paso rápido*, ¡muy bien! 🎉
+    Hemos revisado sus datos de las últimas dos semanas y nos alegra informarle de que *ha conseguido el objetivo de caminar minutos a paso rápido*. ¡Muy buen trabajo! 🎉
 
-    En cuanto al número de pasos diarios, aún no alcanzó el objetivo.
+    Sin embargo, en cuanto al número de pasos diarios, no ha alcanzado el objetivo propuesto. No se preocupe, esto es algo normal y forma parte del proceso.
 
-    ➡️ Próximas 2 semanas:
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
+    ➡️ Para las *próximas dos semanas*, le proponemos:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
+    
+    Aquí le dejamos algunas ideas que pueden ayudarle a dar más pasos a lo largo del día:
 
     {tips_pasos}
 
-    📱 Revise “pasos” y “cadencia de pasos” en *HealthyChronos*.
+    📱 Puede consultar su progreso y estas nuevas metas en la plataforma *HealthyChronos*, accediendo desde el icono de su móvil a la gráfica de “pasos” y a la de “cadencia de pasos”.
 
-    📊 Recuerde: la *media semanal*.
+    📊 Recuerde: lo importante es la *media semanal*, si algún día camina menos, puede compensarlo otro día.
 
-    ¡Ánimo! 💪
+    ¡Le animamos a seguir avanzando! 💪
+    
+    Estamos a su disposición para cualquier duda.
+
+    Un saludo,
+    
+    *Equipo STEP IN*
 
   ambos8: |-
     Hola {nombre},
 
-    *Ha conseguido el tiempo a paso rápido* y está preparado/a para avanzar al *siguiente nivel de ritmo*: *{Z} pasos/min*.
+    Hemos revisado sus datos de las últimas dos semanas y nos alegra informarle de que *ha conseguido el objetivo de caminar minutos a paso rápido*. ¡Muy buen trabajo! 🎉
+    
+    En cuanto al número de pasos diarios, no ha alcanzado todavía la meta propuesta, pero *no se preocupe*: esto es algo normal y forma parte del proceso.
 
-    En este nuevo nivel, comenzará con *{Y} min/día* para adaptarse al ritmo más rápido.
+    ➡️ Además, gracias a su progreso en la cadencia, está preparado/a para avanzar al *siguiente nivel de ritmo*: a partir de ahora caminará a *{Z} pasos por minuto*. En este nuevo nivel comenzará con menos minutos diarios, lo que le permitirá adaptarse a este ritmo más rápido antes de seguir progresando.
 
-    ➡️ Objetivos (próximas 2 semanas):
-    - *{X} pasos/día* 👣
-    - *{Y} min/día a {Z} pasos/min*.
 
-    📱 Consulte sus nuevos objetivos en *HealthyChronos*.
+    Sus *objetivos para las próximas dos semanas* son:
+    - Caminar *{X} pasos al día* 👣
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
 
-    📊 Recuerde: la *media semanal*.
+    📱 Puede consultar sus nuevos objetivos en la plataforma *HealthyChronos*, entrando desde el icono de su móvil y accediendo a las gráficas de “pasos” y “cadencia de pasos”.
 
-    ¡Ánimo en esta nueva etapa! 💪
+    📊 Recuerde: lo importante es la *media semanal*. Si algún día camina menos, puede compensarlo otro día.
+
+    💪 ¡Ánimo en esta nueva etapa, cada avance cuenta!
+    
+    Estamos a su disposición para cualquier duda.
+
+    Un saludo,
+    
+    *Equipo STEP IN*
 
   nodata3: |-
     Hola {nombre},
 
-    Hemos comprobado que en *HealthyChronos* no aparecen sus últimos datos de pasos. Por favor, revise:
+    Hemos comprobado que, desde hace unos días, en la plataforma HealthyChronos no aparecen registrados sus últimos datos de pasos.
+    
+    Esto puede deberse a varias razones y queremos asegurarnos de que todo está bien:
 
-    ⌚ ¿Lleva puesta la pulsera Fitbit?
-    📶 ¿Bluetooth activado en el móvil?
-    🔋 ¿Batería suficiente en la pulsera?
-    📱 ¿Ha abierto recientemente la app Fitbit?
+    ⌚ *¿Está llevando puesta la pulsera Fitbit?*
+    Si no la lleva puesta, ¿puede deberse a algún motivo especial como molestias, olvido u otra circunstancia? Si es así, cuéntenos cómo podemos ayudarle. Usar la pulsera Fitbit es clave para que podamos monitorizar y planificar su progreso durante el estudio.
+    
+    En caso de que si la lleve puesta:
 
-    Si el problema persiste, escríbanos. 📞 Contactaremos con usted si fuera necesario.
+    📶 *¿Tiene el bluetooth activado en su móvil?*
+    Recuerde que el bluetooth debe estar encendido para que la pulsera se sincronice con la aplicación.
+    
+    🔋 *¿Tiene suficiente batería la pulsera?* Debe cargarse aproximadamente una vez por semana.
+    
+    📱 *¿Ha abierto recientemente la aplicación Fitbit en su móvil?*
+    A veces, es útil abrirla y refrescar la página para que los datos se actualicen correctamente.
+    
+    Por favor, compruebe estos aspectos y, si necesita ayuda, no dude en escribirnos.
+
+    📞 En caso de que el problema persista, contactaremos con usted por teléfono.
+    
+    Estamos a su disposición para cualquier duda🤝
 
     Un saludo,
 
@@ -236,28 +297,29 @@ templates:
 
 tips:
   pasos: |-
-    - 🧍‍♀️ Levántese cada hora y camine un poco.
-    - 🛒 Aparque un poco más lejos o bájese una parada antes.
-    - 👥 Caminar en compañía puede motivarle.
-    - 📞 Si habla por teléfono, hágalo de pie o caminando.
-    - ⏰ Revise su gráfico antes de la cena y salga unos minutos si va por debajo.
+    - 🧍‍♀️ Evite estar mucho tiempo seguido sentado/a: levántese cada hora y camine un poco, aunque sea por casa.
+    - 🛒 Cuando vaya a hacer recados, estacione un poco más lejos de lo habitual o bájese una parada antes si usa transporte público.
+    - 👥 Salir a caminar en compañía puede motivarle más y hacer que el paseo sea más ameno.
+    - 📞 Si habla por teléfono, intente hacerlo de pie o caminando por casa.
+    - ⏰ Revise su gráfico de pasos antes de la cena: si está por debajo del objetivo, aún está a tiempo de salir a caminar unos minutos.
   intensidad: |-
-    - 🕖 Elija la hora del día con más energía.
-    - ⏱️ Alterne 30 segundos rápido / 30 segundos habitual varias veces.
-    - 🛣️ Busque caminos llanos y rectos.
-    - 👫 Si camina con alguien, suban un poco el ritmo a ratos.
-    - 🎶 Música con ritmo constante (si le resulta cómodo y seguro).
+    - 🕖 Busque el momento del día en el que tenga más energía: caminar más rápido es más fácil cuando uno se siente con fuerzas.
+    - ⏱️ Durante sus paseos, alterne 30 segundos a un paso algo más rápido con 30 segundos a su ritmo habitual. Repita esta secuencia varias veces.
+    - 🛣️ Elija caminos llanos y rectos, donde sea más fácil mantener el ritmo sin interrupciones.
+    - 👫 Si camina con otra persona, proponga aumentar un poco el ritmo entre ambos durante ciertos tramos.
+    - 🎶 Escuche música animada con un ritmo constante mientras camina.
+    - 🚶‍♂️ Intente empezar su paseo de forma suave y, tras unos minutos de calentamiento, suba ligeramente el ritmo.
   mixto: |-
-    - 🧍‍♀️ Levántese cada hora y camine un poco.
-    - 🛒 Aparque un poco más lejos o bájese una parada antes.
-    - 👥 Caminar en compañía puede motivarle.
-    - 📞 Si habla por teléfono, hágalo de pie o caminando.
-    - ⏰ Revise su gráfico antes de la cena y salga unos minutos si va por debajo.
-    - 🕖 Elija la hora del día con más energía.
-    - ⏱️ Alterne 30 segundos rápido / 30 segundos habitual varias veces.
-    - 🛣️ Busque caminos llanos y rectos.
-    - 👫 Si camina con alguien, suban un poco el ritmo a ratos.
-    - 🎶 Música con ritmo constante (si le resulta cómodo y seguro).
+    - 🕖 Busque el momento del día en el que tenga más energía: caminar más rápido es más fácil cuando uno se siente con fuerzas.
+    - 🧍‍♀️ Evite estar mucho tiempo seguido sentado/a: levántese cada hora y camine un poco, aunque sea por casa.
+    - 🛒 Cuando vaya a hacer recados, estacione un poco más lejos de lo habitual o bájese una parada antes si usa transporte público.
+    - 👥 Salir a caminar en compañía puede motivarle más y hacer que el paseo sea más ameno.
+    - 🛣️️ Elija caminos llanos y rectos, donde sea más fácil mantener el ritmo sin interrupciones.
+    - 🚶‍♂️ Intente empezar su paseo de forma suave y, tras unos minutos de calentamiento, suba ligeramente el ritmo.
+    - ⏱️ Durante sus paseos, alterne 30 segundos a un paso algo más rápido con 30 segundos a su ritmo habitual. Repita esta secuencia varias veces.
+    - 🎶 Escuche música animada con un ritmo constante mientras camina (si le resulta cómodo y seguro).
+    - ⏰ Revise su gráfico de pasos antes de la cena: si está por debajo del objetivo, aún está a tiempo de salir a caminar unos minutos.
+
 
 support:
   consecutive_failures_paragraph: |-
