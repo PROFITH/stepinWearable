@@ -109,7 +109,7 @@ during the baseline 14-day window recording: \$\$
 ### Phase II (m1_3)
 
 From there, every two weeks, the user will download a new recording from
-the Fitbit. Months 1 to 3 (t-indices from 1 to 4) are focused on
+the Fitbit. The first 12 wweeks (t-indices from 0 to 4) are focused on
 increasing the volume of steps per day (X). After each recording is
 processed, the user can generate a message to propose the next target,
 which is:
@@ -146,7 +146,10 @@ as follows:
     multiple of 5 to `median_steps_90plus` at a cadence of 90 steps/min.
 
 -   Else, the target is the next integer multiple of 5 to
-    `median_steps_80plus` at a cadence of 80 steps/min
+    `median_steps_80plus` at a cadence of 80 steps/min.
+    
+Whenever a Y target is (re)computed, it is derived from the participant’s
+current median minutes at the target cadence (i.e., `median_steps_{Z}plus`).
 
 > \*Note: there is an allowance of 1 minute to decide that the
 > participant met the Y/Z target.
@@ -155,8 +158,23 @@ as follows:
 
 ### Phase IV (m4_9)
 
-From there, the cadence target (Z) is scaled up if the participant
-successfully met the previous target:
+Definition of the cadence progression logic (Y/Z):
+
+- **Duration target (Y):** When (re)computed, Y is derived from the
+participant’s current median minutes at the target cadence
+(i.e., `median_steps_{Z}plus`), incremented to the next integer multiple of 5
+until the escalation threshold for the current cadence is reached.
+
+- **Cadence progression (Z):** When the escalation threshold is reached at the
+current cadence, Z increases to the next level. After escalation, Y is computed
+from the participant’s median minutes at the **new** cadence.
+
+- **Escalation thresholds:** Z increases when the participant accumulates at
+least **15 min/day** at Z = 80 or 90, and at least **45 min/day** at Z = 100 or
+110.
+
+Therefore, the cadence target (Z) is scaled up if the participant successfully
+met the previous target:
 
 -   If Z = 80 and `median_steps_80plus` ≥ 15 minutes → Next Z = 90
     steps/min and Y = the next integer multiple of 5 to `median_steps_90plus`.
@@ -169,6 +187,9 @@ successfully met the previous target:
     
 -   If Z = 110 and `median_steps_110plus` ≥ 45 minutes → Next Z = 120
     steps/min and Y = the next integer multiple of 5 to `median_steps_120plus`.
+
+Importantly, when cadence (Z) increases, Y is computed from the participant’s
+current median minutes at the new target cadence.
 
 Otherwise, progression of Y and Z follows the same logic as in Phase
 III, considering that if participant meets the previous target, a new
