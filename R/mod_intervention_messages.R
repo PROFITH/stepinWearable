@@ -62,7 +62,8 @@ load_messages <- local({
 #' @param nombre Character string for the participant's name (used for message text).
 #' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).
 #' @param minutes_inc Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).
-#' @param t Integer t-index for the current 2-week window.
+#' @param t Integer index of the current 2-week review period (14-day window).
+#'   t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.
 #'
 #' @returns A list containing:
 #' \itemize{
@@ -82,7 +83,9 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   message_templates <- msgs$templates
   
   # Phase is inferred from t-index that is being processed (confirmed by user)
-  # 0 -> post-basal; 1..4 -> months 1-3; 5 -> start of month 4; >=6 -> months 4-9.
+  # Each t refers to one consecutive 2-week review (14-day window) used for KPI computation and target updates.
+  # t = 0 is the first processed 2-week recording used to generate the first target (already part of the intervention).
+  # 0 -> post-basal; 1..4 -> months 1-3; 5 -> start of month 4 (init cadence); >=6 -> months 4-9.
   phase <- dplyr::case_when(
     t == 0          ~ "post_basal",
     t >= 1 & t <= 4 ~       "m1_3",

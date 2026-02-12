@@ -71,7 +71,14 @@ KPIs are calculated using the `kpis()` function over the daily summary
 The system gets the phase of intervention based on the saved state and
 files previously processed for the same participant. The researcher is
 allowed to change the phase of the intervention by selecting the t-index
-of the file being processed:
+of the file being processed.
+
+Each `t` index represents a consecutive **2-week review period** (i.e.,
+the 14-day window used to compute KPIs and generate the message for that cycle).
+Importantly, **t = 0 is already part of the intervention workflow**, because it
+corresponds to the first 2-week recording that is processed to generate the
+first step target (X). Therefore, the onset of cadence goals occurs at `t = 5`
+(i.e., after ~12 weeks / ~3 months have elapsed).
 
 -   t = 0 → **`post_basal`**: The very first message (following
     baseline).
