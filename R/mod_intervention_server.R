@@ -34,17 +34,17 @@
 #' the `consecutive_fails` counter, and a `history` list with one entry per
 #' processed \eqn{t}-index. Each history entry stores:
 #' \describe{
-#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..6 = months 1-3, 7+ = months 4-9).}
+#'   \item{t_index}{Integer. Cycle index \eqn{t} (0 = post-basal, 1..4 = months 1-3, 5+ = months 4-9).}
 #'   \item{date_str}{Character. Start date (YYYYMMDD) of the corresponding minute series.}
 #'   \item{start_date}{Date. First day of the 14-day analysis window used for this entry.}
 #'   \item{end_date}{Date. Last day of the 14-day analysis window used for this entry.}
 #'   \item{kpis}{Named list of window medians used by the decision engine, typically:
-#'     `med_steps_day`, `med_steps_80plus`, `med_steps_90plus`, `med_steps_100plus`.}
+#'     `med_steps_day`, `med_steps_80plus`, `med_steps_90plus`, `med_steps_100plus`, `med_steps_110plus`, `med_steps_120plus`.}
 #'   \item{steps_factor}{Numeric. Multiplication factor applied when computing the next X.}
 #'   \item{minutes_inc}{Integer. Minute increment applied when computing/adjusting Y.}
 #'   \item{target_steps}{Numeric. Next \strong{X} target (steps/day).}
 #'   \item{target_minutes}{Integer. Next \strong{Y} target (minutes/day at cadence Z).}
-#'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100 steps/min).}
+#'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100, 110, 120 steps/min).}
 #'   \item{auto_message_key}{Character. Template key chosen by the engine
 #'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`).}
 #'   \item{final_message_key}{Character. Template key finally used/shown (may differ if overridden).}
@@ -200,7 +200,7 @@ mod_intervention_server <- function(id) {
       if (t == 0) {
         shinyjs::disable("steps_factor")
         shinyjs::disable("minutes_increment")
-      } else if (t > 0 && t <= 7) {
+      } else if (t > 0 && t <= 4) {
         shinyjs::enable("steps_factor")
         shinyjs::disable("minutes_increment")
       } else {
@@ -688,7 +688,7 @@ mod_intervention_server <- function(id) {
       
       # Build daily summary over the ALREADY windowed minute series
       #    Note: daily_summary() should return `steps_day` and the minute counts
-      #    `steps_80plus`, `steps_90plus`, `steps_100plus`.
+      #    `steps_80plus`, `steps_90plus`, `steps_100plus`, `steps_110plus`, `steps_120plus`.
       dsum <- daily_summary(steps_data_window())
       
       # Select the series to plot and the y-axis label
@@ -701,7 +701,9 @@ mod_intervention_server <- function(id) {
           input$cadence_filter,
           "Steps \u2265 80"  = 80L,
           "Steps \u2265 90"  = 90L,
-          "Steps \u2265 100" = 100L
+          "Steps \u2265 100" = 100L,
+          "Steps \u2265 110" = 110L,
+          "Steps \u2265 120" = 120L
         )
         col <- paste0("steps_", thr, "plus")
         df_bar <- tibble::tibble(date = dsum$date, value = dsum[[col]], 
@@ -799,12 +801,14 @@ mod_intervention_server <- function(id) {
     rv_defaults <- reactiveValues(rec_sf = NULL, rec_mi = NULL)
     success_flags <- function(st, curk, t) {
       has_prev_X <- !is.null(st$last_X) && is.finite(st$last_X) && t > 0
-      has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 6
-      has_prev_Z <- !is.null(st$last_Z) && is.finite(st$last_Z) && t > 6
+      has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 5
+      has_prev_Z <- !is.null(st$last_Z) && is.finite(st$last_Z) && t > 5
       
       steps_ok <- steps_met(curk$med_steps_day, st$last_X, 1)
       
       cur_minutes_at_prevZ <- dplyr::case_when(
+        has_prev_Z && st$last_Z == 120 ~ curk$med_steps_120plus,
+        has_prev_Z && st$last_Z == 110 ~ curk$med_steps_110plus,
         has_prev_Z && st$last_Z == 100 ~ curk$med_steps_100plus,
         has_prev_Z && st$last_Z ==  90 ~ curk$med_steps_90plus,
         has_prev_Z && st$last_Z ==  80 ~ curk$med_steps_80plus,
@@ -1086,7 +1090,9 @@ mod_intervention_server <- function(id) {
         median_steps_day     = stats::median(cur$steps_day,     na.rm = TRUE),
         median_steps_80plus  = stats::median(cur$steps_80plus,  na.rm = TRUE),
         median_steps_90plus  = stats::median(cur$steps_90plus,  na.rm = TRUE),
-        median_steps_100plus = stats::median(cur$steps_100plus, na.rm = TRUE)
+        median_steps_100plus = stats::median(cur$steps_100plus, na.rm = TRUE),
+        median_steps_110plus = stats::median(cur$steps_110plus, na.rm = TRUE),
+        median_steps_120plus = stats::median(cur$steps_120plus, na.rm = TRUE)
       )
       
       # Persist the windowed data under the canonical filename (overwrite if exists)
@@ -1145,51 +1151,51 @@ mod_intervention_server <- function(id) {
         }
         # TARGETS STEPS
         st$n_targets_steps = if (!is.na(st$last_X) & rv$current_t > 0) st$n_targets_steps + 1L else st$n_targets_steps
-        st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:6) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
-        st$n_targets_steps_t2 = if(!is.na(st$last_X) & rv$current_t %in% 7:12) st$n_targets_steps_t2 + 1L else st$n_targets_steps_t2
-        st$n_targets_steps_t3 = if(!is.na(st$last_X) & rv$current_t >= 13) st$n_targets_steps_t3 + 1L else st$n_targets_steps_t3
+        st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
+        st$n_targets_steps_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_steps_t2 + 1L else st$n_targets_steps_t2
+        st$n_targets_steps_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_steps_t3 + 1L else st$n_targets_steps_t3
         st$n_targets_steps_met = if (length(st$history)) {
           as.integer(sum(sapply(st$history, function(x) x$steps_met), na.rm = T))
         } else {
           0L
         }
         st$n_targets_steps_met_t1 = if (length(st$history)) {
-          as.integer(sum(sapply(st$history[1:(min(6, length(st$history)))], function(x) x$steps_met), na.rm = T))
+          as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$steps_met), na.rm = T))
         } else {
           0L
         }
-        st$n_targets_steps_met_t2 = if (length(st$history) > 6) {
-          as.integer(sum(sapply(st$history[7:(min(12, length(st$history)))], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t2 = if (length(st$history) > 5) {
+          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$steps_met), na.rm = T))
         } else {
           0L
         }
-        st$n_targets_steps_met_t3 = if (length(st$history) > 12) {
-          as.integer(sum(sapply(st$history[13:length(st$history)], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t3 = if (length(st$history) > 11) {
+          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$steps_met), na.rm = T))
         } else {
           0L
         }
         # TARGETS CADENCE
-        st$n_targets_cadence = if (!is.na(st$last_X) & kpis(cur)$n_days >= 7 & rv$current_t > 6) st$n_targets_cadence + 1L else st$n_targets_cadence
-        # st$n_targets_cadence_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:6) st$n_targets_cadence_t1 + 1L else st$n_targets_cadence_t1
-        st$n_targets_cadence_t2 = if(!is.na(st$last_X) & rv$current_t %in% 7:12) st$n_targets_cadence_t2 + 1L else st$n_targets_cadence_t2
-        st$n_targets_cadence_t3 = if(!is.na(st$last_X) & rv$current_t >= 13) st$n_targets_cadence_t3 + 1L else st$n_targets_cadence_t3
+        st$n_targets_cadence = if (!is.na(st$last_X) & kpis(cur)$n_days >= 7 & rv$current_t > 5) st$n_targets_cadence + 1L else st$n_targets_cadence
+        # st$n_targets_cadence_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_cadence_t1 + 1L else st$n_targets_cadence_t1
+        st$n_targets_cadence_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_cadence_t2 + 1L else st$n_targets_cadence_t2
+        st$n_targets_cadence_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_cadence_t3 + 1L else st$n_targets_cadence_t3
         st$n_targets_cadence_met = if (length(st$history)) {
           as.integer(sum(sapply(st$history, function(x) x$cadence_met), na.rm = T))
         } else {
           0L
         }
         # st$n_targets_cadence_met_t1 = if (length(st$history) > 1) {
-        #   as.integer(sum(sapply(st$history[1:(min(6, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        #   as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$cadence_met), na.rm = T))
         # } else {
         #   0L
         # }
-        st$n_targets_cadence_met_t2 = if (length(st$history) > 6) {
-          as.integer(sum(sapply(st$history[7:(min(12, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t2 = if (length(st$history) > 5) {
+          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$cadence_met), na.rm = T))
         } else {
           0L
         }
-        st$n_targets_cadence_met_t3 = if (length(st$history) > 12) {
-          as.integer(sum(sapply(st$history[13:length(st$history)], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t3 = if (length(st$history) > 11) {
+          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$cadence_met), na.rm = T))
         } else {
           0L
         }
@@ -1232,13 +1238,13 @@ mod_intervention_server <- function(id) {
         Metric = c(
           "Total steps (cumulative)", 
           "Targets - total",
-          "Targets - T1 (t 1-6)",
-          "Targets - T2 (t 7-12)",
-          "Targets - T3 (t > 12)",
+          "Targets - T1 (t 1-5)",
+          "Targets - T2 (t 6-11)",
+          "Targets - T3 (t > 11)",
           "Targets - total",
-          # "Targets - T1 (t 1-6)",
-          "Targets - T2 (7-12)",
-          "Targets - T3 (t > 12)"
+          # "Targets - T1 (t 1-5)",
+          "Targets - T2 (6-11)",
+          "Targets - T3 (t > 11)"
         ),
         Value = c(
           fmt_big(steps_total),

@@ -52,9 +52,9 @@ load_messages <- local({
 #' intervention phase and the participant's compliance in the last 2-week window.
 #' 
 #' Logic phases are: (1) post_basal (t = 0) sets the initial step goal (X) based on 
-#' baseline assessment data; (2) m1_3 (t: 1:6) focuses on achieving step accumulation goals (X);
-#' (3) init_m4 (t = 7) introduces the intensity goal (Y minutes at a Z cadence);
-#' (4) m4_9 (t >= 8) evaluates both step accumulation and intensity goals, allowing for escalation.
+#' baseline assessment data; (2) m1_3 (t: 1:4) focuses on achieving step accumulation goals (X);
+#' (3) init_m4 (t = 5) introduces the intensity goal (Y minutes at a Z cadence);
+#' (4) m4_9 (t >= 6) evaluates both step accumulation and intensity goals, allowing for escalation.
 #'
 #' @param state A list representing the participant's historical intervention state (from \code{load_participant_state}), including \code{history}, \code{last_X}, \code{last_Y}, \code{last_Z}, and \code{consecutive_fails}.
 #' @param cur_k A list of KPIs calculated for the current 2-week window.
@@ -62,7 +62,8 @@ load_messages <- local({
 #' @param nombre Character string for the participant's name (used for message text).
 #' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).
 #' @param minutes_inc Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).
-#' @param t Integer t-index for the current 2-week window.
+#' @param t Integer index of the current 2-week review period (14-day window).
+#'   t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.
 #'
 #' @returns A list containing:
 #' \itemize{
@@ -82,11 +83,13 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   message_templates <- msgs$templates
   
   # Phase is inferred from t-index that is being processed (confirmed by user)
-  # 0 -> post-basal; 1..6 -> months 1-3; 7 -> start of month 4; >=8 -> months 4-9.
+  # Each t refers to one consecutive 2-week review (14-day window) used for KPI computation and target updates.
+  # t = 0 is the first processed 2-week recording used to generate the first target (already part of the intervention).
+  # 0 -> post-basal; 1..4 -> months 1-3; 5 -> start of month 4 (init cadence); >=6 -> months 4-9.
   phase <- dplyr::case_when(
     t == 0          ~ "post_basal",
-    t >= 1 & t <= 5 ~       "m1_3",
-    t == 6          ~    "init_m4",
+    t >= 1 & t <= 4 ~       "m1_3",
+    t == 5          ~    "init_m4",
     TRUE            ~       "m4_9"
   )
   
@@ -98,8 +101,8 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   last_minutes_inc <- state$last_minutes_inc
   
   has_prev_X <- !is.null(prev_X) && is.finite(prev_X) && t > 0
-  has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 6
-  has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 6
+  has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 5
+  has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 5
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
@@ -108,6 +111,8 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   
   # Minutes improvement flag
   cur_minutes_at_prevZ <- dplyr::case_when(
+    has_prev_Z && prev_Z == 120 ~ cur_k$med_steps_120plus,
+    has_prev_Z && prev_Z == 110 ~ cur_k$med_steps_110plus,
     has_prev_Z && prev_Z == 100 ~ cur_k$med_steps_100plus,
     has_prev_Z && prev_Z ==  90 ~ cur_k$med_steps_90plus,
     has_prev_Z && prev_Z ==  80 ~ cur_k$med_steps_80plus,
@@ -122,12 +127,12 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   base_X <- if (has_prev_X && isFALSE(steps_ok)) prev_X else cur_k$med_steps_day
   next_X <- round((base_X * steps_factor)/10)*10 # round to tens
   
-  # Z: introduce on init_m4 (t = 6), maybe escalate on m4_9, otherwise keep
+  # Z: introduce on init_m4 (t = 5), maybe escalate on m4_9, otherwise keep
   if (phase == "init_m4" && !has_prev_Z) {
-    next_Z <- next_Z <- dplyr::case_when(
-      cur_k$med_steps_100plus >= 5 ~ 100L,
+    next_Z <- dplyr::case_when(
+      cur_k$med_steps_110plus >= 45 ~ 120L,
+      cur_k$med_steps_100plus >= 45 ~ 110L,
       cur_k$med_steps_90plus  > 15 ~ 100L,
-      cur_k$med_steps_90plus  >= 5 ~  90L,
       cur_k$med_steps_80plus  > 15 ~  90L,
       TRUE                         ~  80L
     )
@@ -149,7 +154,11 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # Z escalation on m4_9
     escalate <- FALSE
     if (phase == "m4_9" && has_prev_Z) {
-      if (prev_Z == 90 && should_escalate_from_90(cur_k$med_steps_90plus)) {
+      if (prev_Z == 110 && should_escalate_from_110(cur_k$med_steps_110plus)) {
+        next_Z <- 120L; escalate <- TRUE
+      } else if (prev_Z == 100 && should_escalate_from_100(cur_k$med_steps_100plus)) {
+        next_Z <- 110L; escalate <- TRUE
+      } else if (prev_Z == 90 && should_escalate_from_90(cur_k$med_steps_90plus)) {
         next_Z <- 100L; escalate <- TRUE
       } else if (prev_Z == 80 && should_escalate_from_80(cur_k$med_steps_80plus)) {
         next_Z <- 90L;  escalate <- TRUE

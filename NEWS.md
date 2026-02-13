@@ -1,5 +1,7 @@
 # stepinWearable 2.0.1
 
+- Cadence step progression now escalates up to 120 steps/min; escalation requires ≥15 min/day at the previous cadence band up to 100 steps/min, and ≥45 min/day from 100 steps/min onward.
+- Month 4 start has been corrected to t = 5, ensuring the first cadence goal is issued at this point (t = 5).
 - Intervention messages have been updated for clarity and consistency.
 - Added a Pull Request template to standardize contributions and ensure code quality.
 - Implemented GitHub Branch Protection rules and `CODEOWNERS` to formalize the review process.

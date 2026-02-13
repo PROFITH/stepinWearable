@@ -58,17 +58,21 @@ mock_t1_state <- list(
 mock_kpis <- tibble::tibble(
   n_days = 14,
   med_steps_day = 12000,
-  med_steps_80plus = 20,
-  med_steps_90plus = 10,
-  med_steps_100plus = 5
+  med_steps_80plus = 100,
+  med_steps_90plus = 80,
+  med_steps_100plus = 50,
+  med_steps_110plus = 30,
+  med_steps_120plus = 15
 )
 
 mock_kpis_old <- tibble::tibble(
   n_days = 14,
   med_steps_day = 11000,
-  med_steps_80plus = 20,
-  med_steps_90plus = 10,
-  med_steps_100plus = 5
+  med_steps_80plus = 50,
+  med_steps_90plus = 40,
+  med_steps_100plus = 30,
+  med_steps_110plus = 10,
+  med_steps_120plus = 5
 )
 
 mock_kpis_nodata <- tibble::tibble(
@@ -76,7 +80,9 @@ mock_kpis_nodata <- tibble::tibble(
   med_steps_day = NA_real_,
   med_steps_80plus = NA_real_,
   med_steps_90plus = NA_real_,
-  med_steps_100plus = NA_real_
+  med_steps_100plus = NA_real_,
+  med_steps_110plus = NA_real_,
+  med_steps_120plus = NA_real_
 )
 
 # --- TEST SUITE 1: DATA PROCESSING AND KPI CALCULATION ---
@@ -93,7 +99,7 @@ test_that("Data preprocessing returns expected structure and dimensions", {
   expect_equal(nrow(dsum_result), 14) 
   
   # Check for essential columns used in plotting/KPIs
-  expect_true(all(c("date", "steps_day", "steps_80plus", "steps_100plus") %in% names(dsum_result)))
+  expect_true(all(c("date", "steps_day", "steps_80plus", "steps_90plus", "steps_100plus", "steps_110plus", "steps_120plus") %in% names(dsum_result)))
 })
 
 test_that("KPI calculation handles edge cases (NA/zero data)", {
@@ -105,6 +111,8 @@ test_that("KPI calculation handles edge cases (NA/zero data)", {
                              steps_80plus = integer(),
                              steps_90plus = integer(),
                              steps_100plus = integer(),
+                             steps_110plus = integer(),
+                             steps_120plus = integer(),
                              valid_day = logical())
   kpis_empty <- kpis(empty_df)
   expect_true(is.na(kpis_empty$med_steps_day))
@@ -113,9 +121,11 @@ test_that("KPI calculation handles edge cases (NA/zero data)", {
   # Test with a window containing some NA data (should use na.rm=TRUE)
   na_df <- tibble(date = as_date(c("2024-01-01", "2024-01-02")),
                   steps_day = c(5000, NA_real_),
-                  steps_80plus = c(20, NA_real_),
-                  steps_90plus = c(10, NA_real_),
-                  steps_100plus = c(5, NA_real_),
+                  steps_80plus = c(100, NA_real_),
+                  steps_90plus = c(80, NA_real_),
+                  steps_100plus = c(50, NA_real_),
+                  steps_110plus = c(30, NA_real_),
+                  steps_120plus = c(15, NA_real_),
                   valid_day = c(TRUE, FALSE))
   kpis_na <- stepinWearable:::kpis(na_df)
   expect_equal(kpis_na$med_steps_day, 5000)

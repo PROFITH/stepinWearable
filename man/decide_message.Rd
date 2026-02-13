@@ -44,7 +44,7 @@ The core function that determines the next step, minutes, and cadence goals
 intervention phase and the participant's compliance in the last 2-week window.
 
 Logic phases are: (1) post_basal (t = 0) sets the initial step goal (X) based on 
-baseline assessment data; (2) m1_3 (t: 1:6) focuses on achieving step accumulation goals (X);
-(3) init_m4 (t = 7) introduces the intensity goal (Y minutes at a Z cadence);
-(4) m4_9 (t >= 8) evaluates both step accumulation and intensity goals, allowing for escalation.
+baseline assessment data; (2) m1_3 (t: 1:4) focuses on achieving step accumulation goals (X);
+(3) init_m4 (t = 5) introduces the intensity goal (Y minutes at a Z cadence);
+(4) m4_9 (t >= 6) evaluates both step accumulation and intensity goals, allowing for escalation.
 }

@@ -12,7 +12,7 @@ NULL
 #' Calculate Daily Summary from Minute-Level Data (+ validity flags)
 #'
 #' Aggregates minute-level data to daily totals and flags valid/invalid days by:
-#'   1) HR criterion: >= 10h of heart-rate minutes with max consecutive HR gap <= 90 min
+#'   1) HR criterion: >= 8h of heart-rate minutes with max consecutive HR gap <= 90 min
 #'   2) Steps criterion: >= steps_threshold steps in the day (default 500)
 #'
 #' @param df Data frame with POSIXct `timestamp`, numeric `steps`, and a heart-rate column
@@ -132,6 +132,8 @@ daily_summary <- function(df,
       steps_80plus  = sum(steps >= 80,  na.rm = TRUE),
       steps_90plus  = sum(steps >= 90,  na.rm = TRUE),
       steps_100plus = sum(steps >= 100, na.rm = TRUE),
+      steps_110plus = sum(steps >= 110, na.rm = TRUE),
+      steps_120plus = sum(steps >= 120, na.rm = TRUE),
       .groups = "drop"
     )
  

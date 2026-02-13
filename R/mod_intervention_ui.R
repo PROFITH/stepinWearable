@@ -123,7 +123,8 @@ mod_intervention_ui <- function(id) {
                   id = ns("cadence_container"),
                   shiny::selectInput(ns("cadence_filter"), "Select cadence",
                                      choices = c("Total steps","Steps \u2265 80",
-                                                 "Steps \u2265 90","Steps \u2265 100"))
+                                                 "Steps \u2265 90","Steps \u2265 100",
+                                                 "Steps \u2265 110", "Steps \u2265 120"))
                 )
               ),
               shiny::column(

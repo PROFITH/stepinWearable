@@ -6,7 +6,7 @@ Authors@R: c(
            family = "Migueles",
            role = c("aut", "cre"),
            email = "jairo@jhmigueles.com", 
-           comment = "PROFITH Research Group"), 
+           comment = "PROFITH Research Group"),
     person(given = "Emilio J.",
            family = "Barranco-Moreno",
            role = "ctb",
