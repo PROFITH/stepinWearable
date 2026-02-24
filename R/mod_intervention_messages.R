@@ -132,7 +132,9 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     next_Z <- dplyr::case_when(
       cur_k$med_steps_110plus >= 45 ~ 120L,
       cur_k$med_steps_100plus >= 45 ~ 110L,
+      cur_k$med_steps_100plus >= 5 ~ 100L,
       cur_k$med_steps_90plus  > 15 ~ 100L,
+      cur_k$med_steps_90plus >= 5 ~ 90L,
       cur_k$med_steps_80plus  > 15 ~  90L,
       TRUE                         ~  80L
     )
