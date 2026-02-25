@@ -77,7 +77,8 @@ load_messages <- local({
 #' @importFrom glue glue
 #' @export
 decide_message <- function(state, cur_k, prev_k, nombre,
-                           steps_factor = 1.05, minutes_inc = 5L, t) {
+                           steps_factor = 1.05, minutes_inc = 5L, t,
+                           force_Z = NULL) {
   # load messages
   msgs <- load_messages()  # <-- runtime
   message_templates <- msgs$templates
@@ -103,6 +104,12 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   has_prev_X <- !is.null(prev_X) && is.finite(prev_X) && t > 0
   has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 5
   has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 5
+  
+  # Z override from UI (force_Z). Robust to NULL -> integer(0)
+  forceZ <- suppressWarnings(as.integer(force_Z))
+  has_forceZ <- length(forceZ) == 1 &&
+    !is.na(forceZ) &&
+    forceZ %in% c(80L, 90L, 100L, 110L, 120L)
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
@@ -138,6 +145,10 @@ decide_message <- function(state, cur_k, prev_k, nombre,
       cur_k$med_steps_80plus  >= 15 ~  90L,
       TRUE                         ~  80L
     )
+    
+    # Z from slider: override cadence target if provided
+    if (has_forceZ) next_Z <- forceZ
+    
     # start intensity with next of currently accumulated among 5, 10, 15
     # after rounding the median minutes to the closer 5
     varname = paste0("med_steps_", next_Z, "plus")
@@ -166,6 +177,13 @@ decide_message <- function(state, cur_k, prev_k, nombre,
         next_Z <- 90L;  escalate <- TRUE
       }
     }
+    
+    # Z from slider: override cadence target if provided
+    if (has_forceZ) {
+      if (has_prev_Z && forceZ != as.integer(prev_Z)) escalate <- TRUE
+      next_Z <- forceZ
+    }
+    
     # Y from slider: reset to minutes_inc on escalation/first-time, else add minutes_inc
     if (escalate || !has_prev_Y) next_Y <- as.integer(minutes_inc)
     else                         next_Y <- as.integer(prev_Y + minutes_inc)

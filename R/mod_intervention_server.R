@@ -195,17 +195,21 @@ mod_intervention_server <- function(id) {
       if (is.null(t) || is.na(t)) {
         shinyjs::disable("steps_factor")
         shinyjs::disable("minutes_increment")
+        shinyjs::disable("cadence_threshold")
         return(invisible())
       }
       if (t == 0) {
         shinyjs::disable("steps_factor")
         shinyjs::disable("minutes_increment")
+        shinyjs::disable("cadence_threshold")
       } else if (t > 0 && t <= 4) {
         shinyjs::enable("steps_factor")
         shinyjs::disable("minutes_increment")
+        shinyjs::disable("cadence_threshold")
       } else {
         shinyjs::enable("steps_factor")
         shinyjs::enable("minutes_increment")
+        shinyjs::enable("cadence_threshold")
       }
     }
     
@@ -597,6 +601,7 @@ mod_intervention_server <- function(id) {
     observeEvent(TRUE, {
       shinyjs::disable("steps_factor")
       shinyjs::disable("minutes_increment")
+      shinyjs::disable("cadence_threshold")
     }, once = TRUE)
     
     session$onFlushed(function() {
@@ -798,7 +803,7 @@ mod_intervention_server <- function(id) {
     
     
     # function to check if X and Y are met in server to redefine slider input default value
-    rv_defaults <- reactiveValues(rec_sf = NULL, rec_mi = NULL)
+    rv_defaults <- reactiveValues(rec_sf = NULL, rec_mi = NULL, rec_z = NULL)
     success_flags <- function(st, curk, t) {
       has_prev_X <- !is.null(st$last_X) && is.finite(st$last_X) && t > 0
       has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 5
@@ -890,10 +895,13 @@ mod_intervention_server <- function(id) {
       # Did the user override the recommended values?
       is_override_sf <- !is.null(rv_defaults$rec_sf) && !isTRUE(all.equal(input$steps_factor,     rv_defaults$rec_sf))
       is_override_mi <- !is.null(rv_defaults$rec_mi) && !isTRUE(all.equal(input$minutes_increment, rv_defaults$rec_mi))
-      
+      is_override_z <- !is.null(rv_defaults$rec_z) && !isTRUE(all.equal(input$cadence_threshold, rv_defaults$rec_z))
+
       # Values to apply
       apply_sf <- if (is_override_sf) input$steps_factor     else rec_sf
       apply_mi <- if (is_override_mi) input$minutes_increment else rec_mi
+      apply_z <- if (is_override_z) as.integer(input$cadence_threshold) else NULL
+      
       
       # decide message based on n valid days
       n_valid <- nrow(cur_valid)
@@ -946,7 +954,8 @@ mod_intervention_server <- function(id) {
       # Generate message based on decided steps_factor and minutes increment
       res <- decide_message(
         state = st, cur_k = curk, prev_k = prevk, nombre = input$name,
-        steps_factor = apply_sf, minutes_inc = apply_mi, t = input$t_index_input
+        steps_factor = apply_sf, minutes_inc = apply_mi, t = input$t_index_input,
+        force_Z = apply_z
       )
       
       # Sync sliders to decided values
@@ -954,10 +963,15 @@ mod_intervention_server <- function(id) {
       updateSliderInput(session, "steps_factor", value = apply_sf)
       shiny::freezeReactiveValue(input, "minutes_increment")
       updateSliderInput(session, "minutes_increment", value = apply_mi)
+      shiny::freezeReactiveValue(input, "cadence_threshold")
+      updateSliderInput(session, "cadence_threshold", value = res$next_Z)
+      shiny::freezeReactiveValue(input, "cadence_threshold")
+      updateSliderInput(session, "cadence_threshold", value = res$next_Z)
       
       # Save current values
       rv_defaults$rec_sf <- rec_sf
       rv_defaults$rec_mi <- rec_mi
+      rv_defaults$rec_z <- res$next_Z
       
       # Prepare glue env used by any template (auto or override)
       glue_env <- list(

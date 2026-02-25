@@ -11,7 +11,8 @@ decide_message(
   nombre,
   steps_factor = 1.05,
   minutes_inc = 5L,
-  t
+  t,
+  force_Z = NULL
 )
 }
 \arguments{
@@ -27,7 +28,8 @@ decide_message(
 
 \item{minutes_inc}{Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).}
 
-\item{t}{Integer t-index for the current 2-week window.}
+\item{t}{Integer index of the current 2-week review period (14-day window).
+t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.}
 }
 \value{
 A list containing:
