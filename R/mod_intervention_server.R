@@ -1163,6 +1163,8 @@ mod_intervention_server <- function(id) {
         } else {
           kpis(cur)$total_steps_alldays
         }
+        # Only count a "new target" when this t_index is new (avoid inflating totals on repeated Save)
+        if (!replaced) {
         # TARGETS STEPS
         st$n_targets_steps = if (!is.na(st$last_X) & rv$current_t > 0) st$n_targets_steps + 1L else st$n_targets_steps
         st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
@@ -1197,6 +1199,7 @@ mod_intervention_server <- function(id) {
           as.integer(sum(sapply(st$history, function(x) x$cadence_met), na.rm = T))
         } else {
           0L
+        }
         }
         # st$n_targets_cadence_met_t1 = if (length(st$history) > 1) {
         #   as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$cadence_met), na.rm = T))
