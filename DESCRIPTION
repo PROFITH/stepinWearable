@@ -1,6 +1,6 @@
 Package: stepinWearable
 Title: Step-IN Wearable Data Management App
-Version: 2.0.1
+Version: 2.0.2
 Authors@R: c(
     person(given = "Jairo H.",
            family = "Migueles",

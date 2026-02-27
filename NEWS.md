@@ -1,3 +1,10 @@
+# stepinWearable 2.0.2
+
+- Window selection now returns start_date (in addition to end_date), ensuring the full analysis window metadata is available throughout the app.
+- Updated init_m4 cadence initialization so participants can start at higher cadence bands (90/100) when they already accumulate 5 minutes at those thresholds.
+- Intervention UI updated: expanded flexibility of the X (steps_factor) and Y (minutes_increment) sliders, and added a new Z (cadence_threshold) slider to allow manual adjustment of cadence targets.
+- Fixed summary counting: repeated clicks on Save Intervention State for the same t-index no longer inflate the “targets total” denominator in the Intervention Summary.
+
 # stepinWearable 2.0.1
 
 - Cadence step progression now escalates up to 120 steps/min; escalation requires ≥15 min/day at the previous cadence band up to 100 steps/min, and ≥45 min/day from 100 steps/min onward.
