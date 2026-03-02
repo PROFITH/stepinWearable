@@ -819,8 +819,9 @@ mod_intervention_server <- function(id) {
         has_prev_Z && st$last_Z ==  80 ~ curk$med_steps_80plus,
         TRUE ~ NA_real_
       )
-      mins_ok <- if (has_prev_Y && !is.na(cur_minutes_at_prevZ))
-        cur_minutes_at_prevZ >= st$last_Y else NA
+      mins_ok <- if (has_prev_Y && !is.na(cur_minutes_at_prevZ)) {
+        minutes_met(cur_minutes_at_prevZ, st$last_Y, minutes_inc)
+      } else NA
   
       list(steps_ok = steps_ok, mins_ok = mins_ok)
     }

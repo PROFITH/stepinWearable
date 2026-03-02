@@ -62,7 +62,7 @@ steps_met <- function(cur_med_steps, prev_target, steps_factor) {
 #' @description
 #' Checks if the current window's median minutes at the target cadence (Y) meets
 #' the previous target \code{target_Y}. Note: compliance is based on meeting or
-#' exceeding the exact previous target Y.
+#' exceeding the exact previous target Y -1 (1-minute tolerance).
 #'
 #' @param cur_med_minutes Current median minutes at the target cadence (Z).
 #' @param target_Y The previous minute target (Y).
@@ -71,7 +71,7 @@ steps_met <- function(cur_med_steps, prev_target, steps_factor) {
 #' @return Logical. \code{TRUE} if compliance threshold is met.
 minutes_met <- function(cur_med_minutes, target_Y, minutes_inc) {
   if (is.na(target_Y) || target_Y <= 0) return(NA)
-  cur_med_minutes >= (minutes_inc - 1)
+  cur_med_minutes >= (target_Y - 1) #1-minute tolerance
 }
 
 
