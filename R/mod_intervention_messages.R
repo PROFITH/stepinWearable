@@ -152,14 +152,15 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # start intensity with next of currently accumulated among 5, 10, 15
     # after rounding the median minutes to the closer 5
     varname = paste0("med_steps_", next_Z, "plus")
-    next_Y <- dplyr::case_when(
-      # if next_Z is 100 and participant already accumulates more than 12.5, 
-      # then next 5-min multiple of current median
-      cur_k[[varname]] >= 12.5 ~ as.integer(((cur_k[[varname]] %/% 5) + 1) * 5),
-      cur_k[[varname]] >= 7.5 ~ 15L,
-      cur_k[[varname]] >= 2.5 ~ 10L,
-      TRUE                   ~  5L
-    )
+    # next_Y <- dplyr::case_when(
+    #   # if next_Z is 100 and participant already accumulates more than 12.5, 
+    #   # then next 5-min multiple of current median
+    #   cur_k[[varname]] >= 12.5 ~ as.integer(((cur_k[[varname]] %/% 5) + 1) * 5),
+    #   cur_k[[varname]] >= 7.5 ~ 15L,
+    #   cur_k[[varname]] >= 2.5 ~ 10L,
+    #   TRUE                   ~  5L
+    # )
+    next_Y <- as.integer((floor((cur_k[[varname]] / 5) + 0.5) * 5) + 5)
   } else {
     # default keep same Z
     next_Z <- if (has_prev_Z) as.integer(prev_Z) else NA_integer_
