@@ -1,5 +1,7 @@
 # stepinWearable 2.0.2
 
+- Improved cadence progression logic (base_mins/cur_minutes at nextZ vs prevZ) for consistent targets when Z changes.- Window selection now returns start_date (in addition to end_date), ensuring the full analysis window metadata is available throughout the app.
+- Minutes increment (minutes_inc) now reflects the real applied delta and the slider stays synced with that value (including rounding).
 - Window selection now returns start_date (in addition to end_date), ensuring the full analysis window metadata is available throughout the app.
 - Updated init_m4 cadence initialization so participants can start at higher cadence bands (90/100) when they already accumulate 5 minutes at those thresholds.
 - Intervention UI updated: expanded flexibility of the X (steps_factor) and Y (minutes_increment) sliders, and added a new Z (cadence_threshold) slider to allow manual adjustment of cadence targets.
