@@ -131,22 +131,26 @@ day (Y) walking at a given cadence (Z). To decide the initial target,
 the process would explore the current 14-day window and set the target
 as follows:
 
--   If `median_steps_110plus` ≥ 45\*, the target is the next integer
-    multiple of 5 to `median_steps_120plus` at a cadence of 120
-    steps/min (e.g., if participant accumulates a median of 47 min/day
-    at 120 steps/minute, then the target would be Y = 50, Z = 120).
+-   If `median_steps_110plus` ≥ 45\*, the target is determined by rounding 
+    `median_steps_120plus` to the nearest multiple of 5 and then adding 5
+    minutes, at a cadence of 120 steps/min (e.g., if participant accumulates
+    a median of 48 min/day at 110 steps/minute and 28 minutes at 120 steps/minute,
+    then the target would be Y = 35, Z = 120).
 
--   Else, if `median_steps_100plus` ≥ 45\*, the target is the next integer
-    multiple of 5 to `median_steps_110plus` at a cadence of 110 steps/min.
+-   Else, if `median_steps_100plus` ≥ 45\*, the target is determined by rounding
+    `median_steps_110plus` to the nearest multiple of 5 and then adding 5 minutes,
+    at a cadence of 110 steps/min.
 
--   Else, if `median_steps_90plus` ≥ 15\*, the target is the next integer
-    multiple of 5 to `median_steps_100plus` at a cadence of 100 steps/min.
+-   Else, if`median_steps_100plus` ≥ 5\* or `median_steps_90plus` ≥ 15\*,
+    the target is determined by rounding `median_steps_100plus` to the nearest
+    multiple of 5 and then adding 5 minutes, at a cadence of 100 steps/min.
 
--   Else, if `median_steps_80plus` ≥ 15\*, the target is the next integer
-    multiple of 5 to `median_steps_90plus` at a cadence of 90 steps/min.
+-   Else, if `median_steps_90plus` ≥ 5\* or `median_steps_80plus` ≥ 15\*,
+    the target is determined by rounding `median_steps_90plus` to the nearest
+    multiple of 5 and then adding 5 minutes, at a cadence of 90 steps/min.
 
--   Else, the target is the next integer multiple of 5 to
-    `median_steps_80plus` at a cadence of 80 steps/min.
+-   Else, the target is determined by rounding `median_steps_80plus` to the
+    nearest multiple of 5 and then adding 5 minutes, at a cadence of 80 steps/min.
     
 Whenever a Y target is (re)computed, it is derived from the participant’s
 current median minutes at the target cadence (i.e., `median_steps_{Z}plus`).
@@ -162,8 +166,8 @@ Definition of the cadence progression logic (Y/Z):
 
 - **Duration target (Y):** When (re)computed, Y is derived from the
 participant’s current median minutes at the target cadence
-(i.e., `median_steps_{Z}plus`), incremented to the next integer multiple of 5
-until the escalation threshold for the current cadence is reached.
+(i.e., `median_steps_{Z}plus`), rounded to the nearest multiple of 5 and then
+adding 5 minutes, until the escalation threshold for the current cadence is reached.
 
 - **Cadence progression (Z):** When the escalation threshold is reached at the
 current cadence, Z increases to the next level. After escalation, Y is computed
@@ -193,8 +197,8 @@ current median minutes at the new target cadence.
 
 Otherwise, progression of Y and Z follows the same logic as in Phase
 III, considering that if participant meets the previous target, a new
-target of 5 minutes above its current median is proposed, and otherwise,
-the previous target is replicated.
+target is proposed by rounding the current median to the nearest multiple of 5
+and the adding 5 minutes, and otherwise, the previous target is replicated.
 
 > Users are allowed to manually adjust the X, and the Y/Z targets in
 > this phase.
