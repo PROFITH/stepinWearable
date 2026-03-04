@@ -10,9 +10,10 @@ decide_message(
   prev_k,
   nombre,
   steps_factor = 1.05,
-  minutes_inc = 5L,
+  minutes_inc = 0L,
   t,
-  force_Z = NULL
+  force_Z = NULL,
+  force_minutes_inc = NULL
 )
 }
 \arguments{

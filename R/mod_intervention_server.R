@@ -820,7 +820,7 @@ mod_intervention_server <- function(id) {
         TRUE ~ NA_real_
       )
       mins_ok <- if (has_prev_Y && !is.na(cur_minutes_at_prevZ)) {
-        minutes_met(cur_minutes_at_prevZ, st$last_Y, minutes_inc)
+        minutes_met(cur_minutes_at_prevZ, st$last_Y, minutes_inc = NA_integer_)
       } else NA
   
       list(steps_ok = steps_ok, mins_ok = mins_ok)
@@ -872,6 +872,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$processed_dir  <- processed_dir
         rv_ctx$start_date     <- wins$start_date
         rv_ctx$end_date       <- wins$end_date
+        rv_ctx$minutes_inc    <- 0L
         
         # Render the automatic message first (always show auto)
         auto_txt <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
@@ -891,8 +892,7 @@ mod_intervention_server <- function(id) {
       # Initial recommended values based on ok flags
       ok <- success_flags(st, curk, input$t_index_input)
       rec_sf <- if (isTRUE(ok$steps_ok)) 1.05 else 1.00
-      rec_mi <- if (isTRUE(ok$mins_ok))     5L else 0L
-      
+
       # Did the user override the recommended values?
       is_override_sf <- !is.null(rv_defaults$rec_sf) && !isTRUE(all.equal(input$steps_factor,     rv_defaults$rec_sf))
       is_override_mi <- !is.null(rv_defaults$rec_mi) && !isTRUE(all.equal(input$minutes_increment, rv_defaults$rec_mi))
@@ -900,7 +900,7 @@ mod_intervention_server <- function(id) {
 
       # Values to apply
       apply_sf <- if (is_override_sf) input$steps_factor     else rec_sf
-      apply_mi <- if (is_override_mi) input$minutes_increment else rec_mi
+      apply_mi <- if (is_override_mi) as.integer(input$minutes_increment) else NULL
       apply_z <- if (is_override_z) as.integer(input$cadence_threshold) else NULL
       
       
@@ -938,6 +938,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$next_Y         <- st$last_Y
         rv_ctx$next_Z         <- st$last_Z
         rv_ctx$message        <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
+        rv_ctx$minutes_inc    <- 0L
         
         output$step_prompt <- renderText(rv_ctx$message)
         updateSelectInput(session, "override_select", selected = "auto")
@@ -955,23 +956,21 @@ mod_intervention_server <- function(id) {
       # Generate message based on decided steps_factor and minutes increment
       res <- decide_message(
         state = st, cur_k = curk, prev_k = prevk, nombre = input$name,
-        steps_factor = apply_sf, minutes_inc = apply_mi, t = input$t_index_input,
-        force_Z = apply_z
+        steps_factor = apply_sf, t = input$t_index_input,
+        force_Z = apply_z, force_minutes_inc = apply_mi
       )
       
       # Sync sliders to decided values
       shiny::freezeReactiveValue(input, "steps_factor")
       updateSliderInput(session, "steps_factor", value = apply_sf)
       shiny::freezeReactiveValue(input, "minutes_increment")
-      updateSliderInput(session, "minutes_increment", value = apply_mi)
+      updateSliderInput(session, "minutes_increment", value = res$minutes_inc)
       shiny::freezeReactiveValue(input, "cadence_threshold")
       updateSliderInput(session, "cadence_threshold", value = res$next_Z)
-      shiny::freezeReactiveValue(input, "cadence_threshold")
-      updateSliderInput(session, "cadence_threshold", value = res$next_Z)
-      
+
       # Save current values
       rv_defaults$rec_sf <- rec_sf
-      rv_defaults$rec_mi <- rec_mi
+      rv_defaults$rec_mi <- res$minutes_inc
       rv_defaults$rec_z <- res$next_Z
       
       # Prepare glue env used by any template (auto or override)
@@ -1004,6 +1003,7 @@ mod_intervention_server <- function(id) {
       rv_ctx$message             <- res$text
       rv_ctx$steps_met           <- res$steps_met
       rv_ctx$cadence_met         <- res$cadence_met
+      rv_ctx$minutes_inc         <- res$minutes_inc
       
       # ALWAYS show the automatic message first
       output$step_prompt <- renderText(res$text)
@@ -1125,7 +1125,7 @@ mod_intervention_server <- function(id) {
         end_date          = wins$end_date,
         kpis              = kpis(cur),
         steps_factor      = input$steps_factor,
-        minutes_inc       = input$minutes_increment,
+        minutes_inc       = rv_ctx$minutes_inc,
         target_steps      = rv_ctx$next_X,
         target_minutes    = rv_ctx$next_Y,
         target_cadence    = rv_ctx$next_Z,
@@ -1156,7 +1156,7 @@ mod_intervention_server <- function(id) {
         st$last_Y <- rv_ctx$next_Y
         st$last_Z <- rv_ctx$next_Z
         st$last_steps_factor <- input$steps_factor
-        st$last_minutes_inc <- input$minutes_increment
+        st$last_minutes_inc <- rv_ctx$minutes_inc
         st$consecutive_fails <- rv_ctx$consecutive_fails
         st$consecutive_success <- rv_ctx$consecutive_success
         st$total_steps_int <- if (length(st$history)) {
