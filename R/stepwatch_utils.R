@@ -69,6 +69,17 @@ preprocess_stepwatch = function(stepwatch_download_dir = character(0),
     pfolders = Sys.glob(file.path(participants[i], "*10 Sec Bin*"))
     for (pfolder in pfolders) {    
     file_path = dir(pfolder, pattern = "csv$", full.names = T)
+    
+    file_path <- sort(file_path)
+    participant_id = basename(participants[i])
+    file_path <- sort(file_path)
+    f1 <- basename(file_path[1])
+    date0 <- regmatches(f1, regexpr("\\d{8}", f1))
+    if (!is.na(date0) && nzchar(date0)) {
+      tsfile0 <- file.path(timeseries_dir, paste0(participant_id, "-", date0, ".RData"))
+      if (file.exists(tsfile0)) next
+    }
+    
     # save raw to folder
     data = do.call(rbind, lapply(file_path, FUN = function(x) data.table::fread(x, data.table = FALSE)))
     
