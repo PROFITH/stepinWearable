@@ -90,6 +90,7 @@ preprocess_stepwatch = function(stepwatch_download_dir = character(0),
     participant_id = basename(participants[i])
     tsfile = file.path(timeseries_dir, 
                        paste0(participant_id, "-", date, ".RData"))
+    if (file.exists(tsfile)) next
     save(stepwatch, file = tsfile)
     }
   }
