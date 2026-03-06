@@ -1,5 +1,6 @@
 # stepinWearable 2.0.2
 
+- Fixed StepWatch preprocessing to include all timepoints
 - Improved cadence progression logic (base_mins/cur_minutes at nextZ vs prevZ) for consistent targets when Z changes.
 - Minutes increment (minutes_inc) now reflects the real applied delta and the slider stays synced with that value (including rounding).
 - Window selection now returns start_date (in addition to end_date), ensuring the full analysis window metadata is available throughout the app.
