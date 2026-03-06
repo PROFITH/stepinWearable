@@ -66,7 +66,8 @@ preprocess_stepwatch = function(stepwatch_download_dir = character(0),
                      full.names = TRUE, include.dirs = T)
   
   for (i in seq_along(participants)) {
-    pfolder = file.path(participants[i], "10 Sec Bin")
+    pfolders = Sys.glob(file.path(participants[i], "*10 Sec Bin*"))
+    for (pfolder in pfolders) {    
     file_path = dir(pfolder, pattern = "csv$", full.names = T)
     # save raw to folder
     data = do.call(rbind, lapply(file_path, FUN = function(x) data.table::fread(x, data.table = FALSE)))
@@ -90,6 +91,7 @@ preprocess_stepwatch = function(stepwatch_download_dir = character(0),
     tsfile = file.path(timeseries_dir, 
                        paste0(participant_id, "-", date, ".RData"))
     save(stepwatch, file = tsfile)
+    }
   }
   
   # final message
