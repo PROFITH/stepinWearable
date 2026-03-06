@@ -19,5 +19,5 @@ Logical. \code{TRUE} if compliance threshold is met.
 \description{
 Checks if the current window's median minutes at the target cadence (Y) meets
 the previous target \code{target_Y}. Note: compliance is based on meeting or
-exceeding the exact previous target Y.
+exceeding the exact previous target Y -1 (1-minute tolerance).
 }

@@ -188,7 +188,7 @@ mod_intervention_ui <- function(id) {
                   shiny::sliderInput(
                     ns("steps_factor"), 
                     "Factor de Aumento (X)", 
-                    min = 0.75, max = 1.10, value = 1.05, step = 0.01
+                    min = 0.30, max = 1.10, value = 1.05, step = 0.01
                   )
                 )
               ),
@@ -200,7 +200,18 @@ mod_intervention_ui <- function(id) {
                   shiny::sliderInput(
                     ns("minutes_increment"), 
                     "Incremento de Minutos (Y)", 
-                    min = -15, max = 20, value = 5, step = 5
+                    min = -60, max = 60, value = 5, step = 1
+                  )
+                )
+              ),
+              # === SLIDER Z: Cadence threshold ===
+              fluidRow(
+                tags$div(
+                  id = ns("cadence_threshold_container"),
+                  shiny::sliderInput(
+                    ns("cadence_threshold"),
+                    "Umbral de Cadencia (Z)",
+                    min = 80, max = 120, value = 100, step = 10
                   )
                 )
               ),

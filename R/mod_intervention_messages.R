@@ -77,7 +77,9 @@ load_messages <- local({
 #' @importFrom glue glue
 #' @export
 decide_message <- function(state, cur_k, prev_k, nombre,
-                           steps_factor = 1.05, minutes_inc = 5L, t) {
+                           steps_factor = 1.05, minutes_inc = 0L, t,
+                           force_Z = NULL,
+                           force_minutes_inc = NULL) {
   # load messages
   msgs <- load_messages()  # <-- runtime
   message_templates <- msgs$templates
@@ -103,6 +105,20 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   has_prev_X <- !is.null(prev_X) && is.finite(prev_X) && t > 0
   has_prev_Y <- !is.null(prev_Y) && is.finite(prev_Y) && prev_Y > 0 && t > 5
   has_prev_Z <- !is.null(prev_Z) && is.finite(prev_Z) && t > 5
+  
+  # Z override from UI (force_Z). Robust to NULL -> integer(0)
+  forceZ <- suppressWarnings(as.integer(force_Z))
+  has_forceZ <- length(forceZ) == 1 &&
+    !is.na(forceZ) &&
+    forceZ %in% c(80L, 90L, 100L, 110L, 120L)
+  
+  # Minutes slider:
+  # We treat the minutes slider as the *real increment* applied over the achieved median minutes.
+
+  get_force_mi <- function(force_minutes_inc) {
+    mi <- suppressWarnings(as.integer(force_minutes_inc))
+    if (length(mi) == 1 && !is.na(mi)) mi else NULL
+  }
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
@@ -132,21 +148,42 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     next_Z <- dplyr::case_when(
       cur_k$med_steps_110plus >= 45 ~ 120L,
       cur_k$med_steps_100plus >= 45 ~ 110L,
-      cur_k$med_steps_90plus  > 15 ~ 100L,
-      cur_k$med_steps_80plus  > 15 ~  90L,
+      cur_k$med_steps_100plus >= 5 ~ 100L,
+      cur_k$med_steps_90plus  >= 15 ~ 100L,
+      cur_k$med_steps_90plus  >= 5 ~ 90L,
+      cur_k$med_steps_80plus  >= 15 ~  90L,
       TRUE                         ~  80L
     )
-    # start intensity with next of currently accumulated among 5, 10, 15
-    # after rounding the median minutes to the closer 5
-    varname = paste0("med_steps_", next_Z, "plus")
-    next_Y <- dplyr::case_when(
-      # if next_Z is 100 and participant already accumulates more than 12.5, 
-      # then next 5-min multiple of current median
-      cur_k[[varname]] >= 12.5 ~ as.integer(((cur_k[[varname]] %/% 5) + 1) * 5),
-      cur_k[[varname]] >= 7.5 ~ 15L,
-      cur_k[[varname]] >= 2.5 ~ 10L,
-      TRUE                   ~  5L
-    )
+    
+    # Z from slider: override cadence target if provided
+    if (has_forceZ) next_Z <- forceZ
+    
+    # start intensity with next of currently accumulated after
+    # rounding the median minutes to the closer 5 and adding 5 minutes
+    
+    # Y target (init_m4): base on achieved minutes at the assigned cadence (next_Z)
+    varname   <- paste0("med_steps_", next_Z, "plus")
+    base_mins <- cur_k[[varname]]
+    if (is.null(base_mins) || is.na(base_mins)) base_mins <- 0
+    base_mins <- as.numeric(base_mins)
+    
+    # AUTO (protocol): round to 5 and add +5
+    next_Y_auto <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
+    
+    # FORCED (slider): next_Y = base_mins + mi
+    mi_force <- get_force_mi(force_minutes_inc)
+    if (!is.null(mi_force)) {
+      next_Y <- as.integer(base_mins + mi_force)
+    } else {
+      next_Y <- next_Y_auto
+    }
+    
+    # Guardrails
+    next_Y <- max(0L, next_Y)
+    
+    # Store the *real increment* applied (what the slider shows)
+    minutes_inc <- as.integer(next_Y - base_mins)
+    
   } else {
     # default keep same Z
     next_Z <- if (has_prev_Z) as.integer(prev_Z) else NA_integer_
@@ -164,9 +201,51 @@ decide_message <- function(state, cur_k, prev_k, nombre,
         next_Z <- 90L;  escalate <- TRUE
       }
     }
-    # Y from slider: reset to minutes_inc on escalation/first-time, else add minutes_inc
-    if (escalate || !has_prev_Y) next_Y <- as.integer(minutes_inc)
-    else                         next_Y <- as.integer(prev_Y + minutes_inc)
+    
+    # Z from slider: override cadence target if provided
+    if (has_forceZ) {
+      if (has_prev_Z && forceZ != as.integer(prev_Z)) escalate <- TRUE
+      next_Z <- forceZ
+    }
+    
+    # Y progression (m4_9): compute from achieved minutes
+    cur_minutes_at_nextZ <- dplyr::case_when(
+      !is.na(next_Z) && next_Z == 120 ~ cur_k$med_steps_120plus,
+      !is.na(next_Z) && next_Z == 110 ~ cur_k$med_steps_110plus,
+      !is.na(next_Z) && next_Z == 100 ~ cur_k$med_steps_100plus,
+      !is.na(next_Z) && next_Z ==  90 ~ cur_k$med_steps_90plus,
+      !is.na(next_Z) && next_Z ==  80 ~ cur_k$med_steps_80plus,
+      TRUE ~ NA_real_
+    )
+    
+    # base minutes depend on whether Z changed (escalate) or not
+    base_mins <- if (escalate || !has_prev_Y) cur_minutes_at_nextZ else cur_minutes_at_prevZ
+    
+    # If not met (same Z) -> keep prev_Y
+    if (!isTRUE(escalate) && has_prev_Y && !isTRUE(mins_ok)) {
+      next_Y <- as.integer(prev_Y)
+      minutes_inc <- 0L
+    } else {
+      if (is.na(base_mins)) base_mins <- 0
+      
+      # Default target from achieved minutes
+      next_Y <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
+      
+      # Optional override: slider sets the increment over base_mins
+      # The final target (next_Y) is always rounded to a 5-min grid
+      mi <- suppressWarnings(as.integer(force_minutes_inc))
+      has_mi <- length(mi) == 1 && !is.na(mi)
+      if (has_mi) {
+        next_Y <- as.integer(floor(((base_mins + mi) / 5) + 0.5) * 5)
+      }
+      
+      # Guardrails
+      next_Y <- max(0L, next_Y)
+      
+      # Store the increment that was effectively applied
+      minutes_inc <- as.integer(next_Y - base_mins)
+    }
+    
   }
   
   # ------------------------------------------------------
@@ -216,7 +295,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     next_X = next_X, next_Y = next_Y, next_Z = next_Z,
     consecutive_fails = new_consecutive_fails,
     consecutive_success = new_consecutive_success,
-    steps_met = steps_ok, cadence_met = mins_ok
+    steps_met = steps_ok, cadence_met = mins_ok, minutes_inc = minutes_inc
   )
 }
 

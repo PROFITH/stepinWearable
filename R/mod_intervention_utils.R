@@ -205,7 +205,7 @@ select_windows <- function(dsum, start_date, end_date) {
   prev_end   <- start_date - 1
   prev_start <- prev_end - (n_days - 1)
   prev <- dplyr::filter(dsum, date >= prev_start & date <= prev_end)
-  list(current = cur, previous = prev, end_date = end_date)
+  list(current = cur, previous = prev, start_date = start_date, end_date = end_date)
 }
 
 #' Check for Recent Data Gaps
