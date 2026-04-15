@@ -7,6 +7,7 @@
 - Updated init_m4 cadence initialization so participants can start at higher cadence bands (90/100) when they already accumulate 5 minutes at those thresholds.
 - Intervention UI updated: expanded flexibility of the X (steps_factor) and Y (minutes_increment) sliders, and added a new Z (cadence_threshold) slider to allow manual adjustment of cadence targets.
 - Fixed summary counting: repeated clicks on Save Intervention State for the same t-index no longer inflate the “targets total” denominator in the Intervention Summary.
+- Updated preprocess_fitbit to flexibly handle Excel files mislabeled with a .csv extension by implementing a specific tryCatch fallback to read.csv.
 
 # stepinWearable 2.0.1
 

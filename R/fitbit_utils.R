@@ -33,7 +33,21 @@ preprocess_fitbit <- function(file_path,
   stopifnot(file.exists(file_path))
   
   # ---- 1) Read file (Excel or CSV) ----
-  data <- readxl::read_excel(file_path)
+  data <- tryCatch({
+    # Attempt to read as Excel first
+    readxl::read_excel(file_path)
+  }, error = function(e) {
+    # Define the specific error message readxl gives for non-Excel files
+    target_error <- "Can't establish that the input is either xls or xlsx"
+    
+    # Only fallback to read.csv if it's the specific 'wrong format' error
+    if (grepl(target_error, e$message)) {
+      return(read.csv(file_path, check.names = FALSE, stringsAsFactors = FALSE))
+    } else {
+      # If it's any other error, stop and show the original error
+      stop(e)
+    }
+  })
   
   # Required columns
   req_cols <- c("MeasurementType", "MeasurementDateTime", "MeasurementValue")
