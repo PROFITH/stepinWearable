@@ -892,6 +892,25 @@ mod_intervention_server <- function(id) {
       # Initial recommended values based on ok flags
       ok <- success_flags(st, curk, input$t_index_input)
       rec_sf <- if (isTRUE(ok$steps_ok)) 1.05 else 1.00
+      
+      # Limit recommended steps factor to 1.00 if already increased +5000 from baseline
+      if (t_index >= 6) {
+        baseline_steps <- NA_real_
+        if (length(st$history) > 0) {
+          for (h in st$history) {
+            if (!is.null(h$t_index) && h$t_index == 0) {
+              baseline_steps <- h$kpis$med_steps_day
+              break
+            }
+          }
+        }
+        if (!is.na(baseline_steps)) {
+          if ((!is.na(st$last_X) && st$last_X >= baseline_steps + 5000) || 
+              (curk$med_steps_day >= baseline_steps + 5000)) {
+            rec_sf <- 1.00
+          }
+        }
+      }
 
       # Did the user override the recommended values?
       is_override_sf <- !is.null(rv_defaults$rec_sf) && !isTRUE(all.equal(input$steps_factor,     rv_defaults$rec_sf))

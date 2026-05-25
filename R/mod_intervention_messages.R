@@ -141,6 +141,29 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   # ---- Next targets ----
   # X: base on previous target
   base_X <- if (has_prev_X && isFALSE(steps_ok)) prev_X else cur_k$med_steps_day
+  
+  # Check baseline for +5000 rule in m4_9 (t >= 6)
+  if (phase == "m4_9") {
+    baseline_steps <- NA_real_
+    if (length(state$history) > 0) {
+      for (h in state$history) {
+        if (!is.null(h$t_index) && h$t_index == 0) {
+          baseline_steps <- h$kpis$med_steps_day
+          break
+        }
+      }
+    }
+    
+    # If baseline is found and we have a previous target to fall back to
+    if (!is.na(baseline_steps) && has_prev_X) {
+      # If current steps OR the previous target have reached the +5000 limit
+      if (cur_k$med_steps_day >= (baseline_steps + 5000) || prev_X >= (baseline_steps + 5000)) {
+        steps_factor <- 1.0     # Don't increase
+        base_X <- prev_X        # Freeze to the last deployed target
+      }
+    }
+  }
+  
   next_X <- round((base_X * steps_factor)/10)*10 # round to tens
   
   # Z: introduce on init_m4 (t = 5), maybe escalate on m4_9, otherwise keep
