@@ -193,14 +193,14 @@ mod_intervention_ui <- function(id) {
                 )
               ),
               
-              # === SLIDER Y: Minutes increment ===
+              # === SLIDER Y: Target minutes ===
               fluidRow(
                 tags$div(
-                  id = ns("minutes_increment_container"),
+                  id = ns("target_minutes_container"),
                   shiny::sliderInput(
-                    ns("minutes_increment"), 
-                    "Incremento de Minutos (Y)", 
-                    min = -60, max = 60, value = 5, step = 1
+                    ns("target_minutes"), 
+                    "Minutos Objetivo (Y)", 
+                    min = 0, max = 120, value = 30, step = 5
                   )
                 )
               ),

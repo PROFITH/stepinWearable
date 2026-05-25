@@ -61,9 +61,10 @@ load_messages <- local({
 #' @param prev_k A list of KPIs calculated for the previous 2-week window (or \code{NULL}).
 #' @param nombre Character string for the participant's name (used for message text).
 #' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).
-#' @param minutes_inc Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).
 #' @param t Integer index of the current 2-week review period (14-day window).
 #'   t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.
+#' @param force_Z Integer to manually override the assigned cadence target \code{Z}.
+#' @param force_Y Integer to manually override the assigned minute target \code{Y}.
 #'
 #' @returns A list containing:
 #' \itemize{
@@ -77,9 +78,9 @@ load_messages <- local({
 #' @importFrom glue glue
 #' @export
 decide_message <- function(state, cur_k, prev_k, nombre,
-                           steps_factor = 1.05, minutes_inc = 0L, t,
+                           steps_factor = 1.05, t,
                            force_Z = NULL,
-                           force_minutes_inc = NULL) {
+                           force_Y = NULL) {
   # load messages
   msgs <- load_messages()  # <-- runtime
   message_templates <- msgs$templates
@@ -112,14 +113,6 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     !is.na(forceZ) &&
     forceZ %in% c(80L, 90L, 100L, 110L, 120L)
   
-  # Minutes slider:
-  # We treat the minutes slider as the *real increment* applied over the achieved median minutes.
-
-  get_force_mi <- function(force_minutes_inc) {
-    mi <- suppressWarnings(as.integer(force_minutes_inc))
-    if (length(mi) == 1 && !is.na(mi)) mi else NULL
-  }
-  
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
     steps_met(cur_k$med_steps_day, prev_X, last_steps_factor)
@@ -141,6 +134,29 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   # ---- Next targets ----
   # X: base on previous target
   base_X <- if (has_prev_X && isFALSE(steps_ok)) prev_X else cur_k$med_steps_day
+  
+  # Check baseline for +5000 rule in m4_9 (t >= 6)
+  if (phase == "m4_9") {
+    baseline_steps <- NA_real_
+    if (length(state$history) > 0) {
+      for (h in state$history) {
+        if (!is.null(h$t_index) && h$t_index == 0) {
+          baseline_steps <- h$kpis$med_steps_day
+          break
+        }
+      }
+    }
+    
+    # If baseline is found and we have a previous target to fall back to
+    if (!is.na(baseline_steps) && has_prev_X) {
+      # If current steps OR the previous target have reached the +5000 limit
+      if (cur_k$med_steps_day >= (baseline_steps + 5000) || prev_X >= (baseline_steps + 5000)) {
+        steps_factor <- 1.0     # Don't increase
+        base_X <- prev_X        # Freeze to the last deployed target
+      }
+    }
+  }
+  
   next_X <- round((base_X * steps_factor)/10)*10 # round to tens
   
   # Z: introduce on init_m4 (t = 5), maybe escalate on m4_9, otherwise keep
@@ -170,10 +186,10 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # AUTO (protocol): round to 5 and add +5
     next_Y_auto <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
     
-    # FORCED (slider): next_Y = base_mins + mi
-    mi_force <- get_force_mi(force_minutes_inc)
-    if (!is.null(mi_force)) {
-      next_Y <- as.integer(base_mins + mi_force)
+    # FORCED (slider): absolute target
+    y_force <- suppressWarnings(as.integer(force_Y))
+    if (length(y_force) == 1 && !is.na(y_force)) {
+      next_Y <- y_force
     } else {
       next_Y <- next_Y_auto
     }
@@ -181,7 +197,12 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # Guardrails
     next_Y <- max(0L, next_Y)
     
-    # Store the *real increment* applied (what the slider shows)
+    # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
+    if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
+      next_Y <- 45L
+    }
+    
+    # Store the *real increment* applied 
     minutes_inc <- as.integer(next_Y - base_mins)
     
   } else {
@@ -221,30 +242,29 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # base minutes depend on whether Z changed (escalate) or not
     base_mins <- if (escalate || !has_prev_Y) cur_minutes_at_nextZ else cur_minutes_at_prevZ
     
-    # If not met (same Z) -> keep prev_Y
-    if (!isTRUE(escalate) && has_prev_Y && !isTRUE(mins_ok)) {
+    # Optional override: slider sets absolute target Y
+    y_force <- suppressWarnings(as.integer(force_Y))
+    has_y <- length(y_force) == 1 && !is.na(y_force)
+    
+    if (has_y) {
+      next_Y <- max(0L, y_force)
+    } else if (!isTRUE(escalate) && has_prev_Y && !isTRUE(mins_ok)) {
       next_Y <- as.integer(prev_Y)
-      minutes_inc <- 0L
     } else {
       if (is.na(base_mins)) base_mins <- 0
       
       # Default target from achieved minutes
       next_Y <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
-      
-      # Optional override: slider sets the increment over base_mins
-      # The final target (next_Y) is always rounded to a 5-min grid
-      mi <- suppressWarnings(as.integer(force_minutes_inc))
-      has_mi <- length(mi) == 1 && !is.na(mi)
-      if (has_mi) {
-        next_Y <- as.integer(floor(((base_mins + mi) / 5) + 0.5) * 5)
-      }
-      
-      # Guardrails
       next_Y <- max(0L, next_Y)
-      
-      # Store the increment that was effectively applied
-      minutes_inc <- as.integer(next_Y - base_mins)
     }
+    
+    # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
+    if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
+      next_Y <- 45L
+    }
+    
+    # Store the increment that was effectively applied
+    minutes_inc <- as.integer(next_Y - base_mins)
     
   }
   

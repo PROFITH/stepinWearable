@@ -96,7 +96,7 @@ mod_intervention_server <- function(id) {
           paste0("#", ns("step_prompt")),                  # Step 8: copy message
           paste0("#", ns("mess_override_container")),      # Step 9: message override
           paste0("#", ns("steps_factor_container")),       # Step 10: steps factor
-          paste0("#", ns("minutes_increment_container")),  # Step 11: minutes increment
+          paste0("#", ns("target_minutes_container")),     # Step 11: target minutes
           paste0("#", ns("generate_prompt")),              # Step 12: regenerate
           paste0("#", ns("save_state"))                    # Step 13: save state
         ),
@@ -111,8 +111,7 @@ mod_intervention_server <- function(id) {
           "<strong>8:</strong> Aqu\u00ED ver\u00E1s el mensaje, copia y pega en Whatsapp para enviar.",
           "<strong>9:</strong> Si el mensaje que ha aparecido no es el correcto, podr\u00E1s elegir otro aqu\u00ED.",
           "<strong>10:</strong> Reajusta (si lo necesitas) el factor de multiplicaci\u00F3n para el reto de pasos.",
-          "<strong>11:</strong> Reajusta (si lo necesitas) los minutos que se debe incrementar el reto de cadencia.",
-          "<strong>12:</strong> Si has hecho alg\u00FAn ajuste, vuelve a pulsar aqu\u00ED para regenerar el mensaje.",
+          "<strong>11:</strong> Reajusta (si lo necesitas) los minutos objetivo para el reto de cadencia.",          "<strong>12:</strong> Si has hecho alg\u00FAn ajuste, vuelve a pulsar aqu\u00ED para regenerar el mensaje.",
           "<strong>13: \u00A1\u00A1\u00A1IMPORTANTE!!!</strong> no olvides guardar el estado de intervenci\u00F3n (datos a utilizar en el siguiente procesamiento)."
         ),
         position = c(
@@ -194,21 +193,21 @@ mod_intervention_server <- function(id) {
     lock_sliders_for_t <- function(t) {
       if (is.null(t) || is.na(t)) {
         shinyjs::disable("steps_factor")
-        shinyjs::disable("minutes_increment")
+        shinyjs::disable("target_minutes")
         shinyjs::disable("cadence_threshold")
         return(invisible())
       }
       if (t == 0) {
         shinyjs::disable("steps_factor")
-        shinyjs::disable("minutes_increment")
+        shinyjs::disable("target_minutes")
         shinyjs::disable("cadence_threshold")
       } else if (t > 0 && t <= 4) {
         shinyjs::enable("steps_factor")
-        shinyjs::disable("minutes_increment")
+        shinyjs::disable("target_minutes")
         shinyjs::disable("cadence_threshold")
       } else {
         shinyjs::enable("steps_factor")
-        shinyjs::enable("minutes_increment")
+        shinyjs::enable("target_minutes")
         shinyjs::enable("cadence_threshold")
       }
     }
@@ -644,6 +643,7 @@ mod_intervention_server <- function(id) {
         rv$current_t <- rv$pending$t_sel
         rv$current_date_str <- rv$pending$date_str
         rv$current_id <- rv$pending$id
+        rv_ctx$generated_for_t <- NULL
       }
       # Notification about generating targets
       showNotification(
@@ -673,6 +673,7 @@ mod_intervention_server <- function(id) {
       rv$current_t <- rv$pending$t_sel
       rv$current_date_str <- rv$pending$date_str
       rv$current_id <- rv$pending$id
+      rv_ctx$generated_for_t <- NULL
     })
     
     observeEvent(input$cancel_overwrite, {
@@ -803,7 +804,6 @@ mod_intervention_server <- function(id) {
     
     
     # function to check if X and Y are met in server to redefine slider input default value
-    rv_defaults <- reactiveValues(rec_sf = NULL, rec_mi = NULL, rec_z = NULL)
     success_flags <- function(st, curk, t) {
       has_prev_X <- !is.null(st$last_X) && is.finite(st$last_X) && t > 0
       has_prev_Y <- !is.null(st$last_Y) && is.finite(st$last_Y) && st$last_Y > 0 && t > 5
@@ -892,17 +892,34 @@ mod_intervention_server <- function(id) {
       # Initial recommended values based on ok flags
       ok <- success_flags(st, curk, input$t_index_input)
       rec_sf <- if (isTRUE(ok$steps_ok)) 1.05 else 1.00
-
-      # Did the user override the recommended values?
-      is_override_sf <- !is.null(rv_defaults$rec_sf) && !isTRUE(all.equal(input$steps_factor,     rv_defaults$rec_sf))
-      is_override_mi <- !is.null(rv_defaults$rec_mi) && !isTRUE(all.equal(input$minutes_increment, rv_defaults$rec_mi))
-      is_override_z <- !is.null(rv_defaults$rec_z) && !isTRUE(all.equal(input$cadence_threshold, rv_defaults$rec_z))
-
-      # Values to apply
-      apply_sf <- if (is_override_sf) input$steps_factor     else rec_sf
-      apply_mi <- if (is_override_mi) as.integer(input$minutes_increment) else NULL
-      apply_z <- if (is_override_z) as.integer(input$cadence_threshold) else NULL
       
+      # Limit recommended steps factor to 1.00 if already increased +5000 from baseline
+      t_index <- as.integer(input$t_index_input)
+      if (t_index >= 6) {
+        baseline_steps <- NA_real_
+        if (length(st$history) > 0) {
+          for (h in st$history) {
+            if (!is.null(h$t_index) && h$t_index == 0) {
+              baseline_steps <- h$kpis$med_steps_day
+              break
+            }
+          }
+        }
+        if (!is.na(baseline_steps)) {
+          if ((!is.na(st$last_X) && st$last_X >= baseline_steps + 5000) || 
+              (curk$med_steps_day >= baseline_steps + 5000)) {
+            rec_sf <- 1.00
+          }
+        }
+      }
+      
+      # Determine if this is the FIRST click for this specific measurement
+      is_first_gen <- is.null(rv_ctx$generated_for_t) || rv_ctx$generated_for_t != input$t_index_input
+
+      # Apply smart defaults on first click, or lock to slider values on subsequent clicks
+      apply_sf <- if (is_first_gen) rec_sf else input$steps_factor
+      apply_y  <- if (is_first_gen) NULL else as.integer(input$target_minutes)
+      apply_z  <- if (is_first_gen) NULL else as.integer(input$cadence_threshold)
       
       # decide message based on n valid days
       n_valid <- nrow(cur_valid)
@@ -953,25 +970,25 @@ mod_intervention_server <- function(id) {
         return(invisible())
       }
       
-      # Generate message based on decided steps_factor and minutes increment
+      # Generate message
       res <- decide_message(
         state = st, cur_k = curk, prev_k = prevk, nombre = input$name,
         steps_factor = apply_sf, t = input$t_index_input,
-        force_Z = apply_z, force_minutes_inc = apply_mi
+        force_Z = apply_z, force_Y = apply_y
       )
       
       # Sync sliders to decided values
       shiny::freezeReactiveValue(input, "steps_factor")
       updateSliderInput(session, "steps_factor", value = apply_sf)
-      shiny::freezeReactiveValue(input, "minutes_increment")
-      updateSliderInput(session, "minutes_increment", value = res$minutes_inc)
+      
+      shiny::freezeReactiveValue(input, "target_minutes")
+      updateSliderInput(session, "target_minutes", value = res$next_Y)
+      
       shiny::freezeReactiveValue(input, "cadence_threshold")
       updateSliderInput(session, "cadence_threshold", value = res$next_Z)
 
-      # Save current values
-      rv_defaults$rec_sf <- rec_sf
-      rv_defaults$rec_mi <- res$minutes_inc
-      rv_defaults$rec_z <- res$next_Z
+      # Mark as generated so subsequent clicks respect your manual slider tweaks
+      rv_ctx$generated_for_t <- input$t_index_input
       
       # Prepare glue env used by any template (auto or override)
       glue_env <- list(
