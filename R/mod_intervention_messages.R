@@ -204,6 +204,11 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # Guardrails
     next_Y <- max(0L, next_Y)
     
+    # MAX CAP: 45 minutes at 120 steps/min
+    if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
+      next_Y <- 45L
+    }
+    
     # Store the *real increment* applied (what the slider shows)
     minutes_inc <- as.integer(next_Y - base_mins)
     
@@ -264,6 +269,11 @@ decide_message <- function(state, cur_k, prev_k, nombre,
       
       # Guardrails
       next_Y <- max(0L, next_Y)
+      
+      # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
+      if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
+        next_Y <- 45L
+      }
       
       # Store the increment that was effectively applied
       minutes_inc <- as.integer(next_Y - base_mins)
