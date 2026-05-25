@@ -26,7 +26,7 @@ NULL
 #' @return Tibble with daily totals plus:
 #'   wear_minutes_hr, max_hr_gap_min, valid_hr_day, valid_sc_day
 #'
-#' @importFrom dplyr mutate group_by summarise n_distinct arrange
+#' @importFrom dplyr mutate group_by summarise n_distinct arrange coalesce
 #' @importFrom tidyr complete
 #' @importFrom lubridate as_date with_tz floor_date ceiling_date
 #' @export
@@ -170,6 +170,18 @@ daily_summary <- function(df,
   # valid
   out$valid_day = out$valid_hr_day & out$valid_sc_day
   
+  # Ensure complete date sequence so missing days are explicit NAs
+  if (nrow(out) > 0) {
+    full_seq <- seq.Date(min(out$date), max(out$date), by = "day")
+    out <- out %>%
+      tidyr::complete(date = full_seq) %>%
+      dplyr::mutate(
+        valid_day    = dplyr::coalesce(valid_day, FALSE),
+        valid_hr_day = dplyr::coalesce(valid_hr_day, FALSE),
+        valid_sc_day = dplyr::coalesce(valid_sc_day, FALSE)
+      )
+  }
+  
   out
 }
 
@@ -198,13 +210,28 @@ select_windows <- function(dsum, start_date, end_date) {
   if (end_date < start_date) {
     tmp <- start_date; start_date <- end_date; end_date <- tmp
   }
-  # current window (inclusive)
-  cur <- dplyr::filter(dsum, date >= start_date & date <= end_date)
-  # enforce integer day count (could be < requested if missing days in dsum)
+  
   n_days <- as.integer(end_date - start_date + 1)
   prev_end   <- start_date - 1
   prev_start <- prev_end - (n_days - 1)
-  prev <- dplyr::filter(dsum, date >= prev_start & date <= prev_end)
+  
+  # Ensure dsum is fully padded from at least the start of the previous window
+  # to the end of the current window, guaranteeing both are correct length
+  min_req <- min(dsum$date, prev_start)
+  max_req <- max(dsum$date, end_date)
+  full_seq <- seq.Date(min_req, max_req, by = "day")
+  
+  dsum_complete <- dsum %>%
+    tidyr::complete(date = full_seq) %>%
+    dplyr::mutate(
+      valid_day    = dplyr::coalesce(valid_day, FALSE),
+      valid_hr_day = dplyr::coalesce(valid_hr_day, FALSE),
+      valid_sc_day = dplyr::coalesce(valid_sc_day, FALSE)
+    )
+  
+  # current window (inclusive)
+  cur <- dplyr::filter(dsum_complete, date >= start_date & date <= end_date)
+  prev <- dplyr::filter(dsum_complete, date >= prev_start & date <= prev_end)
   list(current = cur, previous = prev, start_date = start_date, end_date = end_date)
 }
 
@@ -224,5 +251,5 @@ no_data_last_3_days <- function(dsum, end_date = NULL) {
   if (nrow(dsum) == 0) return(TRUE)
   if (is.null(end_date)) end_date <- max(dsum$date)
   recent <- dplyr::filter(dsum, date >= (end_date - 2) & date <= end_date)
-  nrow(recent) < 3 || all(recent$steps_day == 0)
+  nrow(recent) < 3 || all(is.na(recent$steps_day) | recent$steps_day == 0)
 }
