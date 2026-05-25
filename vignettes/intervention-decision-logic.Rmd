@@ -198,14 +198,20 @@ current median minutes at the new target cadence.
 Otherwise, progression of Y and Z follows the same logic as in Phase
 III, considering that if participant meets the previous target, a new
 target is proposed by rounding the current median to the nearest multiple of 5
-and the adding 5 minutes, and otherwise, the previous target is replicated.
+and then adding 5 minutes, and otherwise, the previous target is replicated.
 
-> Users are allowed to manually adjust the X, and the Y/Z targets in
-> this phase.
+**Maximum Challenge Ceilings:**
+To prevent targets from escalating indefinitely for highly active participants, two strict ceilings are enforced during Phase IV:
+- **Steps (X) Ceiling:** If the participant's current median steps or their previously assigned target reaches **+5,000 steps** above their baseline median (established at `t = 0`), the step factor is locked to `1.0` and the target `X` freezes at the previously assigned goal.
+- **Intensity (Y/Z) Ceiling:** The absolute maximum intensity challenge is capped at **45 minutes at 120 steps/min**. Once the participant achieves this, the `Y` target will not escalate further.
+
+> Users are allowed to manually adjust the X factor, and apply absolute target overrides for Y (minutes) and Z (cadence) in this phase.
 
 ### Handling Missing Data
 
-If no data (missing rows or all zero values) is present in the **last 3
+Data processing explicitly preserves gaps. Missing days within the Fitbit file are padded with `NA` to guarantee that the mathematical analysis windows (`select_windows`) maintain a strict 14-day chronological sequence. 
+
+If no data (explicit `NA` rows or all zero values) is present in the **last 3
 days of the current window**, the **`nodata3`** message is displayed,
 and the saved targets are **not updated**.
 
@@ -333,7 +339,6 @@ res <- stepinWearable:::decide_message(
   prev_k = prevk, 
   nombre = "Maria",
   steps_factor = 1.05,
-  minutes_inc = 5,
   t = 0
 )
 str(res)
