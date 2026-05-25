@@ -61,9 +61,10 @@ load_messages <- local({
 #' @param prev_k A list of KPIs calculated for the previous 2-week window (or \code{NULL}).
 #' @param nombre Character string for the participant's name (used for message text).
 #' @param steps_factor Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).
-#' @param minutes_inc Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).
 #' @param t Integer index of the current 2-week review period (14-day window).
 #'   t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.
+#' @param force_Z Integer to manually override the assigned cadence target \code{Z}.
+#' @param force_Y Integer to manually override the assigned minute target \code{Y}.
 #'
 #' @returns A list containing:
 #' \itemize{
@@ -77,7 +78,7 @@ load_messages <- local({
 #' @importFrom glue glue
 #' @export
 decide_message <- function(state, cur_k, prev_k, nombre,
-                           steps_factor = 1.05, minutes_inc = 0L, t,
+                           steps_factor = 1.05, t,
                            force_Z = NULL,
                            force_Y = NULL) {
   # load messages
@@ -111,14 +112,6 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   has_forceZ <- length(forceZ) == 1 &&
     !is.na(forceZ) &&
     forceZ %in% c(80L, 90L, 100L, 110L, 120L)
-  
-  # Minutes slider:
-  # We treat the minutes slider as the *real increment* applied over the achieved median minutes.
-
-  get_force_mi <- function(force_minutes_inc) {
-    mi <- suppressWarnings(as.integer(force_minutes_inc))
-    if (length(mi) == 1 && !is.na(mi)) mi else NULL
-  }
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {

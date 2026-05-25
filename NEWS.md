@@ -1,3 +1,12 @@
+# stepinWearable 2.1.0
+
+- Implemented a step target (X) ceiling in Phase 2, freezing the goal if the participant exceeds +5000 steps from their baseline (t=0).
+- Added an absolute maximum intensity ceiling, capping targets at a maximum of 45 minutes for the 120 steps/minute cadence (Z).
+- Refactored the Y (minutes) slider to act as an absolute target rather than an increment, updating the rintrojs UI tutorial to reflect this change.
+- Fixed a slider synchronization bug where manual overrides to the Y and Z targets would reset to auto-calculated defaults upon regenerating the message.
+- Fixed missing data handling in daily_summary and select_windows by padding missing days with NA (via tidyr::complete), preserving a strict 14-day chronological sequence.
+- Cleaned up the decide_message function signature by removing obsolete minutes_inc parameters and unused helper functions.
+
 # stepinWearable 2.0.2
 
 - Fixed StepWatch preprocessing to include all timepoints
