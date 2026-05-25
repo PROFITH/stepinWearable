@@ -13,7 +13,7 @@ decide_message(
   minutes_inc = 0L,
   t,
   force_Z = NULL,
-  force_minutes_inc = NULL
+  force_Y = NULL
 )
 }
 \arguments{

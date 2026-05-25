@@ -79,7 +79,7 @@ load_messages <- local({
 decide_message <- function(state, cur_k, prev_k, nombre,
                            steps_factor = 1.05, minutes_inc = 0L, t,
                            force_Z = NULL,
-                           force_minutes_inc = NULL) {
+                           force_Y = NULL) {
   # load messages
   msgs <- load_messages()  # <-- runtime
   message_templates <- msgs$templates
@@ -193,10 +193,10 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # AUTO (protocol): round to 5 and add +5
     next_Y_auto <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
     
-    # FORCED (slider): next_Y = base_mins + mi
-    mi_force <- get_force_mi(force_minutes_inc)
-    if (!is.null(mi_force)) {
-      next_Y <- as.integer(base_mins + mi_force)
+    # FORCED (slider): absolute target
+    y_force <- suppressWarnings(as.integer(force_Y))
+    if (length(y_force) == 1 && !is.na(y_force)) {
+      next_Y <- y_force
     } else {
       next_Y <- next_Y_auto
     }
@@ -204,12 +204,12 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # Guardrails
     next_Y <- max(0L, next_Y)
     
-    # MAX CAP: 45 minutes at 120 steps/min
+    # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
     if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
       next_Y <- 45L
     }
     
-    # Store the *real increment* applied (what the slider shows)
+    # Store the *real increment* applied 
     minutes_inc <- as.integer(next_Y - base_mins)
     
   } else {
@@ -249,35 +249,29 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     # base minutes depend on whether Z changed (escalate) or not
     base_mins <- if (escalate || !has_prev_Y) cur_minutes_at_nextZ else cur_minutes_at_prevZ
     
-    # If not met (same Z) -> keep prev_Y
-    if (!isTRUE(escalate) && has_prev_Y && !isTRUE(mins_ok)) {
+    # Optional override: slider sets absolute target Y
+    y_force <- suppressWarnings(as.integer(force_Y))
+    has_y <- length(y_force) == 1 && !is.na(y_force)
+    
+    if (has_y) {
+      next_Y <- max(0L, y_force)
+    } else if (!isTRUE(escalate) && has_prev_Y && !isTRUE(mins_ok)) {
       next_Y <- as.integer(prev_Y)
-      minutes_inc <- 0L
     } else {
       if (is.na(base_mins)) base_mins <- 0
       
       # Default target from achieved minutes
       next_Y <- as.integer((floor((base_mins / 5) + 0.5) * 5) + 5)
-      
-      # Optional override: slider sets the increment over base_mins
-      # The final target (next_Y) is always rounded to a 5-min grid
-      mi <- suppressWarnings(as.integer(force_minutes_inc))
-      has_mi <- length(mi) == 1 && !is.na(mi)
-      if (has_mi) {
-        next_Y <- as.integer(floor(((base_mins + mi) / 5) + 0.5) * 5)
-      }
-      
-      # Guardrails
       next_Y <- max(0L, next_Y)
-      
-      # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
-      if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
-        next_Y <- 45L
-      }
-      
-      # Store the increment that was effectively applied
-      minutes_inc <- as.integer(next_Y - base_mins)
     }
+    
+    # ABSOLUTE MAX CAP: 45 minutes at 120 steps/min
+    if (!is.na(next_Z) && next_Z >= 120L && next_Y > 45L) {
+      next_Y <- 45L
+    }
+    
+    # Store the increment that was effectively applied
+    minutes_inc <- as.integer(next_Y - base_mins)
     
   }
   
