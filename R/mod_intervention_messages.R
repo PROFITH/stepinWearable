@@ -286,6 +286,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   
   # Failure streak update (used to append supportive text after 2 consecutive fails)
   failed_this_round <- (phase == "m1_3"  & !isTRUE(steps_ok)) ||
+    (phase == "init_m4" & !isTRUE(steps_ok)) ||
     (phase == "m4_9"  & (!isTRUE(steps_ok) | !isTRUE(mins_ok)))
   new_consecutive_fails <- if (isTRUE(failed_this_round)) (state$consecutive_fails %||% 0L) + 1L else 0L
   new_consecutive_success <- if (phase != "post_basal" && isFALSE(failed_this_round)) (state$consecutive_success %||% 0L) + 1L else 0L
