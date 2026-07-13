@@ -41,7 +41,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -59,7 +58,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -79,7 +77,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
