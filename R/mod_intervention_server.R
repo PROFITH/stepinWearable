@@ -371,8 +371,6 @@ mod_intervention_server <- function(id) {
         label = "Analysis window (inclusive)",
         start = default_start,
         end   = default_end,
-        min   = min_d,
-        max   = max_d,
         format = "yyyy-mm-dd",
         separator = " to "
       )
@@ -690,12 +688,13 @@ mod_intervention_server <- function(id) {
     
     # ---- Plot (daily totals with cadence filter) ----
     daily_plot_result <- reactive({
-      req(steps_data_window(), input$cadence_filter)
+      req(input$cadence_filter)
       
-      # Build daily summary over the ALREADY windowed minute series
-      #    Note: daily_summary() should return `steps_day` and the minute counts
-      #    `steps_80plus`, `steps_90plus`, `steps_100plus`, `steps_110plus`, `steps_120plus`.
-      dsum <- daily_summary(steps_data_window())
+      # Use the complete selected window, including dates without data
+      wins <- active_window()
+      dsum <- wins$current
+      
+      req(nrow(dsum) > 0)
       
       # Select the series to plot and the y-axis label
       if (identical(input$cadence_filter, "Total steps")) {
