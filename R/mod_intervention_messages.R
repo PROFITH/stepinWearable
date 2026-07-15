@@ -12,6 +12,8 @@
 #' NOTE: The intervention logic is structured around different "phases" (post-basal, m1-m3, m4-m9)
 #' inferred from the number of successful reviews saved in the participant's history.
 #'
+#' @param force_steps_factor Numeric factor manually selected in the UI to
+#' override the automatically recommended steps factor.
 #' @keywords internal messages intervention decision
 #' @importFrom yaml read_yaml
 #' @noRd
@@ -80,7 +82,8 @@ load_messages <- local({
 decide_message <- function(state, cur_k, prev_k, nombre,
                            steps_factor = 1.05, t,
                            force_Z = NULL,
-                           force_Y = NULL) {
+                           force_Y = NULL,
+                           force_steps_factor = NULL) {
   # load messages
   msgs <- load_messages()  # <-- runtime
   message_templates <- msgs$templates
@@ -112,6 +115,22 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   has_forceZ <- length(forceZ) == 1 &&
     !is.na(forceZ) &&
     forceZ %in% c(80L, 90L, 100L, 110L, 120L)
+  
+  # Optional manual override of the steps factor
+  forced_steps_factor <- suppressWarnings(
+    as.numeric(force_steps_factor)
+  )
+  
+  has_forced_steps_factor <-
+    length(forced_steps_factor) == 1L &&
+    is.finite(forced_steps_factor) &&
+    forced_steps_factor > 0
+  
+  applied_steps_factor <- if (has_forced_steps_factor) {
+    forced_steps_factor
+  } else {
+    steps_factor
+  }
   
   # Steps improvement flag (>=(X-1)% vs. previous window)
   steps_ok <- if (!is.null(prev_k) && nrow(prev_k) == 1) {
@@ -151,13 +170,20 @@ decide_message <- function(state, cur_k, prev_k, nombre,
     if (!is.na(baseline_steps) && has_prev_X) {
       # If current steps OR the previous target have reached the +5000 limit
       if (cur_k$med_steps_day >= (baseline_steps + 5000) || prev_X >= (baseline_steps + 5000)) {
-        steps_factor <- 1.0     # Don't increase
+        # At the ceiling, always use the previously deployed target as the base
         base_X <- prev_X        # Freeze to the last deployed target
+        # Automatic generation, or a manual factor >= 1, must not increase X
+        if (
+          !has_forced_steps_factor ||
+          applied_steps_factor >= 1.0
+        ) {
+          applied_steps_factor <- 1.0
+        }
       }
     }
   }
   
-  next_X <- round((base_X * steps_factor)/10)*10 # round to tens
+  next_X <- round((base_X * applied_steps_factor)/10)*10 # round to tens
   
   # Z: introduce on init_m4 (t = 5), maybe escalate on m4_9, otherwise keep
   if (phase == "init_m4" && !has_prev_Z) {
@@ -314,6 +340,7 @@ decide_message <- function(state, cur_k, prev_k, nombre,
   list(
     key = key, text = txt,
     next_X = next_X, next_Y = next_Y, next_Z = next_Z,
+    steps_factor = applied_steps_factor,
     consecutive_fails = new_consecutive_fails,
     consecutive_success = new_consecutive_success,
     steps_met = steps_ok, cadence_met = mins_ok, minutes_inc = minutes_inc

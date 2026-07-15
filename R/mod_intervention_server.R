@@ -915,8 +915,13 @@ mod_intervention_server <- function(id) {
       # Determine if this is the FIRST click for this specific measurement
       is_first_gen <- is.null(rv_ctx$generated_for_t) || rv_ctx$generated_for_t != input$t_index_input
 
-      # Apply smart defaults on first click, or lock to slider values on subsequent clicks
-      apply_sf <- if (is_first_gen) rec_sf else input$steps_factor
+      # Use automatic recommendations on the first click and manual slider
+      # values on subsequent clicks
+      manual_sf <- if (is_first_gen) {
+        NULL
+      } else {
+        as.numeric(input$steps_factor)
+      }
       apply_y  <- if (is_first_gen) NULL else as.integer(input$target_minutes)
       apply_z  <- if (is_first_gen) NULL else as.integer(input$cadence_threshold)
       
@@ -972,13 +977,13 @@ mod_intervention_server <- function(id) {
       # Generate message
       res <- decide_message(
         state = st, cur_k = curk, prev_k = prevk, nombre = input$name,
-        steps_factor = apply_sf, t = input$t_index_input,
-        force_Z = apply_z, force_Y = apply_y
+        steps_factor = rec_sf, t = input$t_index_input,
+        force_Z = apply_z, force_Y = apply_y, force_steps_factor = manual_sf
       )
       
       # Sync sliders to decided values
       shiny::freezeReactiveValue(input, "steps_factor")
-      updateSliderInput(session, "steps_factor", value = apply_sf)
+      updateSliderInput(session, "steps_factor", value = res$steps_factor)
       
       shiny::freezeReactiveValue(input, "target_minutes")
       updateSliderInput(session, "target_minutes", value = res$next_Y)
