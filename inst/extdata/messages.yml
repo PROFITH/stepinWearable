@@ -294,6 +294,47 @@ templates:
     Un saludo,
 
     *Equipo STEP IN*
+    
+  nodata_steps: |-
+    Hola {nombre},
+
+    Debido a los problemas técnicos de sincronización del reloj con su móvil durante las semanas anteriores, vamos a mantener el mismo objetivo de pasos.
+
+    ➡️ Para las próximas dos semanas, le proponemos caminar *{X} pasos al día* 👣.
+
+    📊 Recuerde: lo importante es la *media semanal*. Si algún día camina menos, puede compensarlo en otro momento.
+
+    📱 Le animamos a entrar cada día en la *plataforma HealthyChronos* desde su móvil, donde podrá ver sus pasos diarios y su meta semanal.
+
+    Estamos a su disposición para cualquier duda.
+
+    ¡Le animamos a seguir así! 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
+
+  nodata_steps_cadence: |-
+    Hola {nombre},
+
+    Debido a los problemas técnicos de sincronización del reloj con su móvil durante las semanas anteriores, vamos a mantener los mismos objetivos de pasos y de caminar a paso rápido.
+
+    ➡️ Para las próximas dos semanas, le proponemos:
+
+    - Caminar *{X} pasos al día* 👣.
+    - Acumular *{Y} minutos al día caminando a un ritmo de {Z} pasos por minuto*.
+
+    📊 Recuerde: lo importante es la *media semanal*. Si algún día camina menos, puede compensarlo en otro momento.
+
+    📱 Le animamos a entrar cada día en la *plataforma HealthyChronos* desde su móvil, donde podrá ver sus pasos diarios y sus metas semanales.
+
+    Estamos a su disposición para cualquier duda.
+
+    ¡Le animamos a seguir así! 💪
+
+    Un saludo,
+
+    *Equipo STEP IN*
 
 tips:
   pasos: |-

@@ -46,7 +46,7 @@
 #'   \item{target_minutes}{Integer. Next \strong{Y} target (minutes/day at cadence Z).}
 #'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100, 110, 120 steps/min).}
 #'   \item{auto_message_key}{Character. Template key chosen by the engine
-#'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`).}
+#'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`, `"nodata_steps"`, `"nodata_steps_cadence"`).}
 #'   \item{final_message_key}{Character. Template key finally used/shown (may differ if overridden).}
 #'   \item{manual_override}{Logical. `TRUE` iff `final_message_key` differs from `auto_message_key`.}
 #'   \item{message}{Character. Fully rendered WhatsApp message text stored for audit.}
@@ -339,7 +339,7 @@ mod_intervention_server <- function(id) {
     # Holds the last automatic decision and all data needed to save later
     rv_ctx <- reactiveValues(
       available = FALSE,          # TRUE after Generate Challenge computes a message
-      auto_key = NULL,            # template picked by the decision engine (or "nodata3")
+      auto_key = NULL,            # template picked by the decision engine, including no-data templates
       final_key = NULL,           # template actually shown (auto by default, or override)
       glue_env = NULL,            # glue environment to render any template consistently
       add_supportive = FALSE,     # whether supportive paragraph applies (2+ fails)
@@ -555,6 +555,27 @@ mod_intervention_server <- function(id) {
       # load state of participant if not available
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
+      # Select the no-data message according to the targets already deployed
+      has_previous_steps_target <-
+        length(st$last_X) == 1L &&
+        is.finite(st$last_X)
+      
+      has_previous_cadence_target <-
+        length(st$last_Y) == 1L &&
+        is.finite(st$last_Y) &&
+        st$last_Y > 0 &&
+        length(st$last_Z) == 1L &&
+        is.finite(st$last_Z)
+      
+      nodata_key <- if (!has_previous_steps_target) {
+        # Fallback for t = 0 or any case without a previously deployed X target
+        "nodata3"
+      } else if (has_previous_cadence_target) {
+        "nodata_steps_cadence"
+      } else {
+        "nodata_steps"
+      }
+      
       existing_state_t <- vapply(st$history, function(h) h$t_index, FUN.VALUE = integer(1))
       
       # Suggested t: next after the maximum existing t in state file
@@ -880,8 +901,8 @@ mod_intervention_server <- function(id) {
         # Update override context
         rv_ctx$available      <- TRUE
         rv_ctx$glue_env       <- glue_env
-        rv_ctx$auto_key       <- "nodata3"
-        rv_ctx$final_key      <- "nodata3"
+        rv_ctx$auto_key       <- nodata_key
+        rv_ctx$final_key      <- nodata_key
         rv_ctx$add_supportive <- FALSE
         rv_ctx$add_congrats   <- FALSE
         rv_ctx$processed_dir  <- processed_dir
@@ -890,7 +911,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$minutes_inc    <- 0L
         
         # Render the automatic no data message
-        auto_txt <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
+        auto_txt <- do.call(glue::glue, c(list(message_templates[[nodata_key]]), glue_env))
         # No new target was generated in this cycle
         rv_ctx$curk <- NULL
         # Keep the last targets that were actually sent
@@ -974,8 +995,8 @@ mod_intervention_server <- function(id) {
         
         rv_ctx$available      <- TRUE
         rv_ctx$glue_env       <- glue_env
-        rv_ctx$auto_key       <- "nodata3"
-        rv_ctx$final_key      <- "nodata3"
+        rv_ctx$auto_key       <- nodata_key
+        rv_ctx$final_key      <- nodata_key
         rv_ctx$add_supportive <- FALSE
         rv_ctx$add_congrats   <- FALSE
         rv_ctx$processed_dir  <- processed_dir
@@ -985,7 +1006,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$next_X         <- st$last_X
         rv_ctx$next_Y         <- st$last_Y
         rv_ctx$next_Z         <- st$last_Z
-        rv_ctx$message        <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
+        rv_ctx$message        <- do.call(glue::glue, c(list(message_templates[[nodata_key]]), glue_env))
         rv_ctx$minutes_inc    <- 0L
         rv_ctx$steps_met <- NA
         rv_ctx$cadence_met <- NA
@@ -997,7 +1018,13 @@ mod_intervention_server <- function(id) {
         removeNotification(ns("set_target"))
         showNotification(
           ui = tagList(shiny::icon("info-circle"),
-                       sprintf("Only %d valid days in the selected window (need 7+). Sent 'No data (3 days)'.", n_valid)),
+                       sprintf(
+                         paste0(
+                           "Only %d valid days in the selected window (need 7+). ",
+                           "Previous targets were maintained."
+                         ),
+                         n_valid
+                       )),
           type = "warning", duration = 8
         )
         return(invisible())
