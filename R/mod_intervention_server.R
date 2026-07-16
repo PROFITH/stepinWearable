@@ -78,6 +78,20 @@ mod_intervention_server <- function(id) {
       if (is.null(x) || is.na(x)) return(0)
       as.numeric(x)
     }
+    count_met_flags <- function(history, field) {
+      
+      if (!length(history)) {
+        return(0L)
+      }
+      
+      as.integer(sum(vapply(
+        history,
+        function(entry) {
+          is.list(entry) && isTRUE(entry[[field]])
+        },
+        logical(1)
+      )))
+    }
     fmt_big <- function(x) format(x, big.mark = ".", decimal.mark = ",")
     
     # ---- Interactive tutorial (rintrojs) ----
@@ -339,7 +353,9 @@ mod_intervention_server <- function(id) {
       consecutive_fails = 0L,     # streak computed by engine for this cycle
       consecutive_success = 0L,   # streak computed by engine for this cycle
       processed_dir = NULL,       # resolved processed dir for state persistence
-      message = NULL              # message sent to participant
+      message = NULL,              # message sent to participant
+      steps_met = NA,
+      cadence_met = NA
     )
     
     # We also track which t was saved for the currently loaded measurement
@@ -873,9 +889,20 @@ mod_intervention_server <- function(id) {
         rv_ctx$end_date       <- wins$end_date
         rv_ctx$minutes_inc    <- 0L
         
-        # Render the automatic message first (always show auto)
+        # Render the automatic no data message
         auto_txt <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
-        output$step_prompt <- renderText(auto_txt)
+        # No new target was generated in this cycle
+        rv_ctx$curk <- NULL
+        # Keep the last targets that were actually sent
+        rv_ctx$next_X <- st$last_X
+        rv_ctx$next_Y <- st$last_Y
+        rv_ctx$next_Z <- st$last_Z
+        # Save the message and mark compliance as not evaluated
+        rv_ctx$message <- auto_txt
+        rv_ctx$steps_met <- NA
+        rv_ctx$cadence_met <- NA
+        
+        output$step_prompt <- renderText(rc_ctx$message)
         updateSelectInput(session, "override_select", selected = "auto")
         return(invisible())
       }
@@ -960,6 +987,8 @@ mod_intervention_server <- function(id) {
         rv_ctx$next_Z         <- st$last_Z
         rv_ctx$message        <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
         rv_ctx$minutes_inc    <- 0L
+        rv_ctx$steps_met <- NA
+        rv_ctx$cadence_met <- NA
         
         output$step_prompt <- renderText(rv_ctx$message)
         updateSelectInput(session, "override_select", selected = "auto")
@@ -1192,23 +1221,31 @@ mod_intervention_server <- function(id) {
         st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
         st$n_targets_steps_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_steps_t2 + 1L else st$n_targets_steps_t2
         st$n_targets_steps_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_steps_t3 + 1L else st$n_targets_steps_t3
-        st$n_targets_steps_met = if (length(st$history)) {
-          as.integer(sum(sapply(st$history, function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met <- count_met_flags(
+          st$history,
+          "steps_met"
+        )
+        st$n_targets_steps_met_t1 <- if (length(st$history)) {
+          count_met_flags(
+            st$history[seq_len(min(5, length(st$history)))],
+            "steps_met"
+          )
         } else {
           0L
         }
-        st$n_targets_steps_met_t1 = if (length(st$history)) {
-          as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t2 <- if (length(st$history) > 5) {
+          count_met_flags(
+            st$history[6:min(11, length(st$history))],
+            "steps_met"
+          )
         } else {
           0L
         }
-        st$n_targets_steps_met_t2 = if (length(st$history) > 5) {
-          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$steps_met), na.rm = T))
-        } else {
-          0L
-        }
-        st$n_targets_steps_met_t3 = if (length(st$history) > 11) {
-          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t3 <- if (length(st$history) > 11) {
+          count_met_flags(
+            st$history[12:length(st$history)],
+            "steps_met"
+          )
         } else {
           0L
         }
@@ -1217,24 +1254,29 @@ mod_intervention_server <- function(id) {
         # st$n_targets_cadence_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_cadence_t1 + 1L else st$n_targets_cadence_t1
         st$n_targets_cadence_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_cadence_t2 + 1L else st$n_targets_cadence_t2
         st$n_targets_cadence_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_cadence_t3 + 1L else st$n_targets_cadence_t3
-        st$n_targets_cadence_met = if (length(st$history)) {
-          as.integer(sum(sapply(st$history, function(x) x$cadence_met), na.rm = T))
-        } else {
-          0L
-        }
+        st$n_targets_cadence_met <- count_met_flags(
+          st$history,
+          "cadence_met"
+        )
         }
         # st$n_targets_cadence_met_t1 = if (length(st$history) > 1) {
         #   as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$cadence_met), na.rm = T))
         # } else {
         #   0L
         # }
-        st$n_targets_cadence_met_t2 = if (length(st$history) > 5) {
-          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t2 <- if (length(st$history) > 5) {
+          count_met_flags(
+            st$history[6:min(11, length(st$history))],
+            "cadence_met"
+          )
         } else {
           0L
         }
-        st$n_targets_cadence_met_t3 = if (length(st$history) > 11) {
-          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t3 <- if (length(st$history) > 11) {
+          count_met_flags(
+            st$history[12:length(st$history)],
+            "cadence_met"
+          )
         } else {
           0L
         }
