@@ -12,8 +12,6 @@
 #' NOTE: The intervention logic is structured around different "phases" (post-basal, m1-m3, m4-m9)
 #' inferred from the number of successful reviews saved in the participant's history.
 #'
-#' @param force_steps_factor Numeric factor manually selected in the UI to
-#' override the automatically recommended steps factor.
 #' @keywords internal messages intervention decision
 #' @importFrom yaml read_yaml
 #' @noRd
@@ -67,6 +65,8 @@ load_messages <- local({
 #'   t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.
 #' @param force_Z Integer to manually override the assigned cadence target \code{Z}.
 #' @param force_Y Integer to manually override the assigned minute target \code{Y}.
+#' @param force_steps_factor Numeric factor manually selected in the UI to
+#'   override the automatically recommended steps factor.
 #'
 #' @returns A list containing:
 #' \itemize{
