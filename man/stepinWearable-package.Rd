@@ -37,6 +37,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Jairo H. Migueles \email{jairo@jhmigueles.com} (PROFITH Research Group)
 
+Authors:
+\itemize{
+  \item Jairo H. Migueles \email{jairo@jhmigueles.com} (PROFITH Research Group)
+}
+
 Other contributors:
 \itemize{
   \item Emilio J. Barranco-Moreno \email{emilio.barranco@ugr.es} (PROFITH Research Group) [contributor]

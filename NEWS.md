@@ -1,3 +1,7 @@
+# stepinWearable 2.1.1
+
+- Minor patch in preprocess_fitbit to support new exported format from Healhty Chronos
+
 # stepinWearable 2.1.0
 
 - Implemented a step target (X) ceiling in Phase 2, freezing the goal if the participant exceeds +5000 steps from their baseline (t=0).

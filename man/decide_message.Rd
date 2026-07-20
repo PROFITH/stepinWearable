@@ -10,7 +10,6 @@ decide_message(
   prev_k,
   nombre,
   steps_factor = 1.05,
-  minutes_inc = 0L,
   t,
   force_Z = NULL,
   force_Y = NULL
@@ -27,10 +26,12 @@ decide_message(
 
 \item{steps_factor}{Numeric factor used to increase the step goal \code{X} upon success (e.g., 1.05 for +5\%).}
 
-\item{minutes_inc}{Integer increment for the minute goal \code{Y} upon success (e.g., 5 minutes).}
-
 \item{t}{Integer index of the current 2-week review period (14-day window).
 t = 0 corresponds to the first 14-day recording processed to set the initial targets and is considered part of the intervention.}
+
+\item{force_Z}{Integer to manually override the assigned cadence target \code{Z}.}
+
+\item{force_Y}{Integer to manually override the assigned minute target \code{Y}.}
 }
 \value{
 A list containing:

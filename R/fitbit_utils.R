@@ -70,12 +70,12 @@ preprocess_fitbit <- function(file_path,
          paste(req_cols, collapse = ", "))
   }
   
-  if (!"Steps" %in% unique(d$MeasurementType)) stop("No 'Steps' rows found in file.")
+  if (!"Steps" %in% unique(data$MeasurementType)) stop("No 'Steps' rows found in file.")
   # (Se corrige el mensaje duplicado del chequeo original de HR)
-  if (!"Heart rate" %in% unique(d$MeasurementType)) stop("No 'Heart rate' rows found in file.")
+  if (!"Heart rate" %in% unique(data$MeasurementType)) stop("No 'Heart rate' rows found in file.")
   
   # ---- 3) Parse datetimes robustly ----
-  v <- d$MeasurementDateTime
+  v <- data$MeasurementDateTime
   
   parse_char <- function(x, tz_local, local_clock) {
     # Try common day-month / ISO layouts. Add more if your export varies.
@@ -98,7 +98,7 @@ preprocess_fitbit <- function(file_path,
     as.POSIXct(x * 86400, origin = "1899-12-30", tz = tz_local)
   }
   
-  d$MeasurementDateTime <- if (inherits(v, "POSIXct")) {
+  data$MeasurementDateTime <- if (inherits(v, "POSIXct")) {
     if (timestamps_are_local) {
       lubridate::force_tz(v, tzone = tz)  # assign tz, do not shift
     } else {
@@ -117,8 +117,8 @@ preprocess_fitbit <- function(file_path,
   
   
   # reshape
-  d_steps = d[d$MeasurementType == "Steps", c("MeasurementDateTime", "MeasurementValue")]
-  d_hr = d[d$MeasurementType == "Heart rate", c("MeasurementDateTime", "MeasurementValue")]
+  d_steps = data[data$MeasurementType == "Steps", c("MeasurementDateTime", "MeasurementValue")]
+  d_hr = data[data$MeasurementType == "Heart rate", c("MeasurementDateTime", "MeasurementValue")]
   # Remove exact duplicate rows
   d_hr <- d_hr[!duplicated(d_hr), ]
   
