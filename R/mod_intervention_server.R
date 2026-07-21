@@ -853,9 +853,6 @@ mod_intervention_server <- function(id) {
       # data
       df <- steps_data()
       req(nrow(df) > 0)
-      
-      # Aggregate to daily
-      dsum <- daily_summary(df, tz = local_tz)
       wins <- active_window()
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
@@ -884,50 +881,8 @@ mod_intervention_server <- function(id) {
       # Restrict to the selected window and keep only valid days
       cur_all    <- wins$current
       cur_valid  <- dplyr::filter(cur_all, valid_day %in% TRUE)
+    
       
-      # Branch 1: "No data (3 days)" -> always show automatic nodata message
-      if (no_data_last_3_days(dsum, end_date = wins$end_date)) {
-        # ---- AUTO: NODATA ----
-        # Build a minimal env (we also reuse previous targets, if available, for overrides)
-        glue_env <- list(
-          nombre = input$name %||% "Nombre",
-          X = format(round(st$last_X %||% NA_real_), big.mark = ".", decimal.mark = ","), # may be NA
-          Y = st$last_Y %||% 0L,
-          Z = st$last_Z %||% NA_integer_,
-          tips_pasos = tips_pasos,
-          tips_intensidad = tips_intensidad,
-          tips_mixto = tips_mixto
-        )
-        
-        # Update override context
-        rv_ctx$available      <- TRUE
-        rv_ctx$glue_env       <- glue_env
-        rv_ctx$auto_key       <- nodata_key
-        rv_ctx$final_key      <- nodata_key
-        rv_ctx$add_supportive <- FALSE
-        rv_ctx$add_congrats   <- FALSE
-        rv_ctx$processed_dir  <- processed_dir
-        rv_ctx$start_date     <- wins$start_date
-        rv_ctx$end_date       <- wins$end_date
-        rv_ctx$minutes_inc    <- 0L
-        
-        # Render the automatic no data message
-        auto_txt <- do.call(glue::glue, c(list(message_templates[[nodata_key]]), glue_env))
-        # No new target was generated in this cycle
-        rv_ctx$curk <- NULL
-        # Keep the last targets that were actually sent
-        rv_ctx$next_X <- st$last_X
-        rv_ctx$next_Y <- st$last_Y
-        rv_ctx$next_Z <- st$last_Z
-        # Save the message and mark compliance as not evaluated
-        rv_ctx$message <- auto_txt
-        rv_ctx$steps_met <- NA
-        rv_ctx$cadence_met <- NA
-        
-        output$step_prompt <- renderText(rv_ctx$message)
-        updateSelectInput(session, "override_select", selected = "auto")
-        return(invisible())
-      }
       
       # KPIs on the *selected* current and previous windows
       t_index = as.integer(input$t_index_input)
@@ -1154,12 +1109,14 @@ mod_intervention_server <- function(id) {
       
       # --- Use the SELECTED WINDOW for calculations ---
       wins <- active_window()
+      # Valid days are used for KPI and median calculations
       cur  <- dplyr::filter(wins$current, valid_day %in% TRUE)
       if (!nrow(cur)) {
         showNotification("Selected window has no data to save.", type = "error")
         return(invisible())
       }
-      win_start <- min(cur$date); win_end <- max(cur$date)
+      # Preserve the complete selected window
+      win_start <- wins$start_date; win_end <- wins$end_date
       
       # Build local day bounds (inclusive)
       start_dt <- as.POSIXct(paste0(win_start, " 00:00:00"), tz = local_tz)
@@ -1173,8 +1130,8 @@ mod_intervention_server <- function(id) {
       # (optional) ensure saved timestamps carry the local tz explicitly
       steps_ts$timestamp <- lubridate::force_tz(steps_ts$timestamp, tzone = local_tz)
       
-      # Daily summary for the selected window only
-      dsum <- daily_summary(steps_ts, tz = local_tz)
+      # Daily summary including every day in the selected window
+      dsum <- wins$current
       
       # Medians for the selected window
       medians <- list(
