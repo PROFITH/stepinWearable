@@ -923,7 +923,7 @@ mod_intervention_server <- function(id) {
         rv_ctx$steps_met <- NA
         rv_ctx$cadence_met <- NA
         
-        output$step_prompt <- renderText(rc_ctx$message)
+        output$step_prompt <- renderText(rv_ctx$message)
         updateSelectInput(session, "override_select", selected = "auto")
         return(invisible())
       }
