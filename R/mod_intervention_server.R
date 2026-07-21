@@ -555,26 +555,6 @@ mod_intervention_server <- function(id) {
       # load state of participant if not available
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
-      # Select the no-data message according to the targets already deployed
-      has_previous_steps_target <-
-        length(st$last_X) == 1L &&
-        is.finite(st$last_X)
-      
-      has_previous_cadence_target <-
-        length(st$last_Y) == 1L &&
-        is.finite(st$last_Y) &&
-        st$last_Y > 0 &&
-        length(st$last_Z) == 1L &&
-        is.finite(st$last_Z)
-      
-      nodata_key <- if (!has_previous_steps_target) {
-        # Fallback for t = 0 or any case without a previously deployed X target
-        "nodata3"
-      } else if (has_previous_cadence_target) {
-        "nodata_steps_cadence"
-      } else {
-        "nodata_steps"
-      }
       
       existing_state_t <- vapply(st$history, function(h) h$t_index, FUN.VALUE = integer(1))
       
@@ -879,6 +859,27 @@ mod_intervention_server <- function(id) {
       wins <- active_window()
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
+      
+      # Select the no-data message according to the targets already deployed
+      has_previous_steps_target <-
+        length(st$last_X) == 1L &&
+        is.finite(st$last_X)
+      
+      has_previous_cadence_target <-
+        length(st$last_Y) == 1L &&
+        is.finite(st$last_Y) &&
+        st$last_Y > 0 &&
+        length(st$last_Z) == 1L &&
+        is.finite(st$last_Z)
+      
+      nodata_key <- if (!has_previous_steps_target) {
+        # Fallback for t = 0 or any case without a previously deployed X target
+        "nodata3"
+      } else if (has_previous_cadence_target) {
+        "nodata_steps_cadence"
+      } else {
+        "nodata_steps"
+      }
       
       # Restrict to the selected window and keep only valid days
       cur_all    <- wins$current
