@@ -1,3 +1,14 @@
+# stepinWearable 2.2.0
+
+- Fixed the success streak calculation at `t = 5`, ensuring that a failed step target resets the streak during the initial months 4–9 cycle.
+- Allowed analysis windows to extend beyond the dates available in the Fitbit file. Missing dates are displayed as invalid days, and the complete selected window is preserved in the saved daily summary.
+- Removed the rule that prevented target generation when data were missing during the final three days of the selected window. Messages and targets are now generated whenever at least seven valid days are available.
+- Added target-maintenance messages for no-data cycles.
+- Preserved previously deployed targets during no-data cycles without generating or counting new targets.
+- Fixed crashes associated with saving or processing no-data cycles by storing unevaluated compliance flags as `NA` and counting compliance results robustly.
+- Allowed researchers to manually reduce the step target after the baseline +5,000-step ceiling has been reached, while preventing further target increases above the ceiling.
+- Added regression tests for streak handling, no-data cycles and manual step-target adjustments.
+
 # stepinWearable 2.1.0
 
 - Implemented a step target (X) ceiling in Phase 2, freezing the goal if the participant exceeds +5000 steps from their baseline (t=0).
