@@ -9,6 +9,10 @@
 - Allowed researchers to manually reduce the step target after the baseline +5,000-step ceiling has been reached, while preventing further target increases above the ceiling.
 - Added regression tests for streak handling, no-data cycles and manual step-target adjustments.
 
+# stepinWearable 2.1.1
+
+- Minor patch in preprocess_fitbit to support new exported format from Healhty Chronos
+
 # stepinWearable 2.1.0
 
 - Implemented a step target (X) ceiling in Phase 2, freezing the goal if the participant exceeds +5000 steps from their baseline (t=0).

@@ -33,37 +33,49 @@ preprocess_fitbit <- function(file_path,
   stopifnot(file.exists(file_path))
   
   # ---- 1) Read file (Excel or CSV) ----
-  data <- tryCatch({
-    # Attempt to read as Excel first
-    readxl::read_excel(file_path)
-  }, error = function(e) {
-    # Define the specific error message readxl gives for non-Excel files
-    target_error <- "Can't establish that the input is either xls or xlsx"
-    
-    # Only fallback to read.csv if it's the specific 'wrong format' error
-    if (grepl(target_error, e$message)) {
-      return(read.csv(file_path, check.names = FALSE, stringsAsFactors = FALSE))
-    } else {
-      # If it's any other error, stop and show the original error
-      stop(e)
-    }
-  })
+  sheets <- tryCatch(readxl::excel_sheets(file_path), error = function(e) NULL)
   
-  # Required columns
+  if (!is.null(sheets) && length(sheets) > 1) {
+    # MULTIPLE SHEETS (NEW FORMAT)
+    steps_sheet <- grep("step", sheets, ignore.case = TRUE, value = TRUE)[1]
+    hr_sheet    <- grep("heart", sheets, ignore.case = TRUE, value = TRUE)[1]
+    
+    if (is.na(steps_sheet)) stop("No 'Steps' sheet found in file.")
+    
+    d_steps <- readxl::read_excel(file_path, sheet = steps_sheet)
+    
+    if (!is.na(hr_sheet)) {
+      d_hr <- readxl::read_excel(file_path, sheet = hr_sheet)
+      data <- rbind(d_steps, d_hr)
+    } else {
+      data <- d_steps
+    }
+  } else {
+    # SINGLE SHEET (LEGACY FORMAT)
+    data <- tryCatch({
+      readxl::read_excel(file_path)
+    }, error = function(e) {
+      target_error <- "Can't establish that the input is either xls or xlsx"
+      if (grepl(target_error, e$message)) {
+        return(read.csv(file_path, check.names = FALSE, stringsAsFactors = FALSE))
+      } else {
+        stop(e)
+      }
+    })
+  }
+  
   req_cols <- c("MeasurementType", "MeasurementDateTime", "MeasurementValue")
   if (!all(req_cols %in% names(data))) {
     stop("Input file must contain columns: ",
          paste(req_cols, collapse = ", "))
   }
   
-  # ---- 2) Keep only Steps; rename to (timestamp_raw, steps) ----
-  d <- data[data$MeasurementType %in% c("Steps", "Heart rate"),
-            c("MeasurementDateTime", "MeasurementType", "MeasurementValue")]
-  if (!"Steps" %in% unique(d$MeasurementType)) stop("No 'Steps' rows found in file.")
-  if (!"Heart rate" %in% unique(d$MeasurementType)) stop("No 'Steps' rows found in file.")
+  if (!"Steps" %in% unique(data$MeasurementType)) stop("No 'Steps' rows found in file.")
+  # (Se corrige el mensaje duplicado del chequeo original de HR)
+  if (!"Heart rate" %in% unique(data$MeasurementType)) stop("No 'Heart rate' rows found in file.")
   
   # ---- 3) Parse datetimes robustly ----
-  v <- d$MeasurementDateTime
+  v <- data$MeasurementDateTime
   
   parse_char <- function(x, tz_local, local_clock) {
     # Try common day-month / ISO layouts. Add more if your export varies.
@@ -86,7 +98,7 @@ preprocess_fitbit <- function(file_path,
     as.POSIXct(x * 86400, origin = "1899-12-30", tz = tz_local)
   }
   
-  d$MeasurementDateTime <- if (inherits(v, "POSIXct")) {
+  data$MeasurementDateTime <- if (inherits(v, "POSIXct")) {
     if (timestamps_are_local) {
       lubridate::force_tz(v, tzone = tz)  # assign tz, do not shift
     } else {
@@ -105,8 +117,8 @@ preprocess_fitbit <- function(file_path,
   
   
   # reshape
-  d_steps = d[d$MeasurementType == "Steps", c("MeasurementDateTime", "MeasurementValue")]
-  d_hr = d[d$MeasurementType == "Heart rate", c("MeasurementDateTime", "MeasurementValue")]
+  d_steps = data[data$MeasurementType == "Steps", c("MeasurementDateTime", "MeasurementValue")]
+  d_hr = data[data$MeasurementType == "Heart rate", c("MeasurementDateTime", "MeasurementValue")]
   # Remove exact duplicate rows
   d_hr <- d_hr[!duplicated(d_hr), ]
   
