@@ -1,5 +1,6 @@
 # stepinWearable 2.2.0
 
+- Added codecov badge to inform about package test coverage.
 - Fixed the success streak calculation at `t = 5`, ensuring that a failed step target resets the streak during the initial months 4–9 cycle.
 - Allowed analysis windows to extend beyond the dates available in the Fitbit file. Missing dates are displayed as invalid days, and the complete selected window is preserved in the saved daily summary.
 - Removed the rule that prevented target generation when data were missing during the final three days of the selected window. Messages and targets are now generated whenever at least seven valid days are available.
