@@ -9,3 +9,5 @@ $run_dev.*
 ^docs/
 ^README\.html$
 ^_brand\.yml$
+^\.github$
+^codecov\.yml$
