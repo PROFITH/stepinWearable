@@ -1,3 +1,7 @@
+# stepinWearable 2.2.1
+
+- Added codecov badge to inform about package test coverage.
+
 # stepinWearable 2.2.0
 
 - Fixed the success streak calculation at `t = 5`, ensuring that a failed step target resets the streak during the initial months 4–9 cycle.
