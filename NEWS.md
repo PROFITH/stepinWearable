@@ -8,6 +8,7 @@
 - Fixed crashes associated with saving or processing no-data cycles by storing unevaluated compliance flags as `NA` and counting compliance results robustly.
 - Allowed researchers to manually reduce the step target after the baseline +5,000-step ceiling has been reached, while preventing further target increases above the ceiling.
 - Added regression tests for streak handling, no-data cycles and manual step-target adjustments.
+- Added codecov badge to inform about package test coverage.
 
 # stepinWearable 2.1.1
 
