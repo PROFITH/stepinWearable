@@ -41,7 +41,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -59,7 +58,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -79,7 +77,6 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
     prev_k = prev_kpis,
     nombre = "TestUser",
     steps_factor = 1.00, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -88,4 +85,52 @@ test_that("Decision engine caps duration target at 45 min for 120 steps/min", {
   expect_equal(res_y_capped$next_Z, 120L)
   
 
+})
+
+test_that("Failed step target at t = 5 resets consecutive success streak", {
+  
+  prev_kpis <- tibble::tibble(
+    n_days = 14,
+    med_steps_day = 10000,
+    med_steps_80plus = 20,
+    med_steps_90plus = 10,
+    med_steps_100plus = 5,
+    med_steps_110plus = 0,
+    med_steps_120plus = 0
+  )
+  
+  cur_kpis <- tibble::tibble(
+    n_days = 14,
+    med_steps_day = 5000,
+    med_steps_80plus = 20,
+    med_steps_90plus = 10,
+    med_steps_100plus = 5,
+    med_steps_110plus = 0,
+    med_steps_120plus = 0
+  )
+  
+  state <- list(
+    history = list(),
+    last_X = 10000,
+    last_Y = NA_integer_,
+    last_Z = NA_integer_,
+    last_steps_factor = 1.05,
+    last_minutes_inc = NA_integer_,
+    consecutive_fails = 0L,
+    consecutive_success = 1L
+  )
+  
+  result <- decide_message(
+    state = state,
+    cur_k = cur_kpis,
+    prev_k = prev_kpis,
+    nombre = "TestUser",
+    steps_factor = 1.05,
+    t = 5
+  )
+  
+  expect_equal(result$key, "ambos2")
+  expect_false(result$steps_met)
+  expect_equal(result$consecutive_success, 0L)
+  expect_equal(result$consecutive_fails, 1L)
 })

@@ -169,14 +169,12 @@ test_that("Decision engine selects correct key based on performance", {
   
   # Scenario 1: Initial state (t=0), very good performance
   X_factor = 1.05
-  Y_inc = 5
   res_initial_good <- decide_message(
     state = mock_initial_state,
     cur_k = mock_kpis,
     prev_k = NULL,         # No previous window
     nombre = "TestUser",
     steps_factor = X_factor,
-    minutes_inc = Y_inc,
     t = 0
   )
   expect_true(res_initial_good$key == "msg0")
@@ -205,7 +203,6 @@ test_that("Decision engine selects correct key based on performance", {
     prev_k = mock_kpis_old,
     nombre = "TestUser",
     steps_factor = 1.1,
-    minutes_inc = 5,
     t = 1
   )
   # Should not trigger supportive message as cur_k is above prev_k*1.09
@@ -237,7 +234,6 @@ test_that("Decision engine selects correct key based on performance", {
     prev_k = mock_kpis_old,
     nombre = "TestUser",
     steps_factor = X_factor,
-    minutes_inc = 5,
     t = 1
   )
   
@@ -253,7 +249,6 @@ test_that("Decision engine selects correct key based on performance", {
     prev_k = NULL,
     nombre = "TestUser",
     steps_factor = 1.1,
-    minutes_inc = 5,
     t = 4
   )
   # Check that targets are set to default/NA if no data is present

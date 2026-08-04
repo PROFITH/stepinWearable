@@ -46,7 +46,7 @@
 #'   \item{target_minutes}{Integer. Next \strong{Y} target (minutes/day at cadence Z).}
 #'   \item{target_cadence}{Integer. Next \strong{Z} target (one of 80, 90, 100, 110, 120 steps/min).}
 #'   \item{auto_message_key}{Character. Template key chosen by the engine
-#'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`).}
+#'     (e.g., `"msg0"`, `"pasos1"`, ..., `"ambos8"`, `"nodata3"`, `"nodata_steps"`, `"nodata_steps_cadence"`).}
 #'   \item{final_message_key}{Character. Template key finally used/shown (may differ if overridden).}
 #'   \item{manual_override}{Logical. `TRUE` iff `final_message_key` differs from `auto_message_key`.}
 #'   \item{message}{Character. Fully rendered WhatsApp message text stored for audit.}
@@ -77,6 +77,20 @@ mod_intervention_server <- function(id) {
     fmt_num <- function(x) {
       if (is.null(x) || is.na(x)) return(0)
       as.numeric(x)
+    }
+    count_met_flags <- function(history, field) {
+      
+      if (!length(history)) {
+        return(0L)
+      }
+      
+      as.integer(sum(vapply(
+        history,
+        function(entry) {
+          is.list(entry) && isTRUE(entry[[field]])
+        },
+        logical(1)
+      )))
     }
     fmt_big <- function(x) format(x, big.mark = ".", decimal.mark = ",")
     
@@ -325,7 +339,7 @@ mod_intervention_server <- function(id) {
     # Holds the last automatic decision and all data needed to save later
     rv_ctx <- reactiveValues(
       available = FALSE,          # TRUE after Generate Challenge computes a message
-      auto_key = NULL,            # template picked by the decision engine (or "nodata3")
+      auto_key = NULL,            # template picked by the decision engine, including no-data templates
       final_key = NULL,           # template actually shown (auto by default, or override)
       glue_env = NULL,            # glue environment to render any template consistently
       add_supportive = FALSE,     # whether supportive paragraph applies (2+ fails)
@@ -339,7 +353,9 @@ mod_intervention_server <- function(id) {
       consecutive_fails = 0L,     # streak computed by engine for this cycle
       consecutive_success = 0L,   # streak computed by engine for this cycle
       processed_dir = NULL,       # resolved processed dir for state persistence
-      message = NULL              # message sent to participant
+      message = NULL,              # message sent to participant
+      steps_met = NA,
+      cadence_met = NA
     )
     
     # We also track which t was saved for the currently loaded measurement
@@ -371,8 +387,6 @@ mod_intervention_server <- function(id) {
         label = "Analysis window (inclusive)",
         start = default_start,
         end   = default_end,
-        min   = min_d,
-        max   = max_d,
         format = "yyyy-mm-dd",
         separator = " to "
       )
@@ -541,6 +555,7 @@ mod_intervention_server <- function(id) {
       # load state of participant if not available
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
+      
       existing_state_t <- vapply(st$history, function(h) h$t_index, FUN.VALUE = integer(1))
       
       # Suggested t: next after the maximum existing t in state file
@@ -690,12 +705,13 @@ mod_intervention_server <- function(id) {
     
     # ---- Plot (daily totals with cadence filter) ----
     daily_plot_result <- reactive({
-      req(steps_data_window(), input$cadence_filter)
+      req(input$cadence_filter)
       
-      # Build daily summary over the ALREADY windowed minute series
-      #    Note: daily_summary() should return `steps_day` and the minute counts
-      #    `steps_80plus`, `steps_90plus`, `steps_100plus`, `steps_110plus`, `steps_120plus`.
-      dsum <- daily_summary(steps_data_window())
+      # Use the complete selected window, including dates without data
+      wins <- active_window()
+      dsum <- wins$current
+      
+      req(nrow(dsum) > 0)
       
       # Select the series to plot and the y-axis label
       if (identical(input$cadence_filter, "Total steps")) {
@@ -837,49 +853,36 @@ mod_intervention_server <- function(id) {
       # data
       df <- steps_data()
       req(nrow(df) > 0)
-      
-      # Aggregate to daily
-      dsum <- daily_summary(df, tz = local_tz)
       wins <- active_window()
       processed_dir <- get_processed_dir()
       st <- load_participant_state(processed_dir, input$participant_id)
       
+      # Select the no-data message according to the targets already deployed
+      has_previous_steps_target <-
+        length(st$last_X) == 1L &&
+        is.finite(st$last_X)
+      
+      has_previous_cadence_target <-
+        length(st$last_Y) == 1L &&
+        is.finite(st$last_Y) &&
+        st$last_Y > 0 &&
+        length(st$last_Z) == 1L &&
+        is.finite(st$last_Z)
+      
+      nodata_key <- if (!has_previous_steps_target) {
+        # Fallback for t = 0 or any case without a previously deployed X target
+        "nodata3"
+      } else if (has_previous_cadence_target) {
+        "nodata_steps_cadence"
+      } else {
+        "nodata_steps"
+      }
+      
       # Restrict to the selected window and keep only valid days
       cur_all    <- wins$current
       cur_valid  <- dplyr::filter(cur_all, valid_day %in% TRUE)
+    
       
-      # Branch 1: "No data (3 days)" -> always show automatic nodata message
-      if (no_data_last_3_days(dsum, end_date = wins$end_date)) {
-        # ---- AUTO: NODATA ----
-        # Build a minimal env (we also reuse previous targets, if available, for overrides)
-        glue_env <- list(
-          nombre = input$name %||% "Nombre",
-          X = format(round(st$last_X %||% NA_real_), big.mark = ".", decimal.mark = ","), # may be NA
-          Y = st$last_Y %||% 0L,
-          Z = st$last_Z %||% NA_integer_,
-          tips_pasos = tips_pasos,
-          tips_intensidad = tips_intensidad,
-          tips_mixto = tips_mixto
-        )
-        
-        # Update override context
-        rv_ctx$available      <- TRUE
-        rv_ctx$glue_env       <- glue_env
-        rv_ctx$auto_key       <- "nodata3"
-        rv_ctx$final_key      <- "nodata3"
-        rv_ctx$add_supportive <- FALSE
-        rv_ctx$add_congrats   <- FALSE
-        rv_ctx$processed_dir  <- processed_dir
-        rv_ctx$start_date     <- wins$start_date
-        rv_ctx$end_date       <- wins$end_date
-        rv_ctx$minutes_inc    <- 0L
-        
-        # Render the automatic message first (always show auto)
-        auto_txt <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
-        output$step_prompt <- renderText(auto_txt)
-        updateSelectInput(session, "override_select", selected = "auto")
-        return(invisible())
-      }
       
       # KPIs on the *selected* current and previous windows
       t_index = as.integer(input$t_index_input)
@@ -916,8 +919,13 @@ mod_intervention_server <- function(id) {
       # Determine if this is the FIRST click for this specific measurement
       is_first_gen <- is.null(rv_ctx$generated_for_t) || rv_ctx$generated_for_t != input$t_index_input
 
-      # Apply smart defaults on first click, or lock to slider values on subsequent clicks
-      apply_sf <- if (is_first_gen) rec_sf else input$steps_factor
+      # Use automatic recommendations on the first click and manual slider
+      # values on subsequent clicks
+      manual_sf <- if (is_first_gen) {
+        NULL
+      } else {
+        as.numeric(input$steps_factor)
+      }
       apply_y  <- if (is_first_gen) NULL else as.integer(input$target_minutes)
       apply_z  <- if (is_first_gen) NULL else as.integer(input$cadence_threshold)
       
@@ -943,8 +951,8 @@ mod_intervention_server <- function(id) {
         
         rv_ctx$available      <- TRUE
         rv_ctx$glue_env       <- glue_env
-        rv_ctx$auto_key       <- "nodata3"
-        rv_ctx$final_key      <- "nodata3"
+        rv_ctx$auto_key       <- nodata_key
+        rv_ctx$final_key      <- nodata_key
         rv_ctx$add_supportive <- FALSE
         rv_ctx$add_congrats   <- FALSE
         rv_ctx$processed_dir  <- processed_dir
@@ -954,8 +962,10 @@ mod_intervention_server <- function(id) {
         rv_ctx$next_X         <- st$last_X
         rv_ctx$next_Y         <- st$last_Y
         rv_ctx$next_Z         <- st$last_Z
-        rv_ctx$message        <- do.call(glue::glue, c(list(message_templates$nodata3), glue_env))
+        rv_ctx$message        <- do.call(glue::glue, c(list(message_templates[[nodata_key]]), glue_env))
         rv_ctx$minutes_inc    <- 0L
+        rv_ctx$steps_met <- NA
+        rv_ctx$cadence_met <- NA
         
         output$step_prompt <- renderText(rv_ctx$message)
         updateSelectInput(session, "override_select", selected = "auto")
@@ -964,7 +974,13 @@ mod_intervention_server <- function(id) {
         removeNotification(ns("set_target"))
         showNotification(
           ui = tagList(shiny::icon("info-circle"),
-                       sprintf("Only %d valid days in the selected window (need 7+). Sent 'No data (3 days)'.", n_valid)),
+                       sprintf(
+                         paste0(
+                           "Only %d valid days in the selected window (need 7+). ",
+                           "Previous targets were maintained."
+                         ),
+                         n_valid
+                       )),
           type = "warning", duration = 8
         )
         return(invisible())
@@ -973,13 +989,13 @@ mod_intervention_server <- function(id) {
       # Generate message
       res <- decide_message(
         state = st, cur_k = curk, prev_k = prevk, nombre = input$name,
-        steps_factor = apply_sf, t = input$t_index_input,
-        force_Z = apply_z, force_Y = apply_y
+        steps_factor = rec_sf, t = input$t_index_input,
+        force_Z = apply_z, force_Y = apply_y, force_steps_factor = manual_sf
       )
       
       # Sync sliders to decided values
       shiny::freezeReactiveValue(input, "steps_factor")
-      updateSliderInput(session, "steps_factor", value = apply_sf)
+      updateSliderInput(session, "steps_factor", value = res$steps_factor)
       
       shiny::freezeReactiveValue(input, "target_minutes")
       updateSliderInput(session, "target_minutes", value = res$next_Y)
@@ -1093,12 +1109,14 @@ mod_intervention_server <- function(id) {
       
       # --- Use the SELECTED WINDOW for calculations ---
       wins <- active_window()
+      # Valid days are used for KPI and median calculations
       cur  <- dplyr::filter(wins$current, valid_day %in% TRUE)
       if (!nrow(cur)) {
         showNotification("Selected window has no data to save.", type = "error")
         return(invisible())
       }
-      win_start <- min(cur$date); win_end <- max(cur$date)
+      # Preserve the complete selected window
+      win_start <- wins$start_date; win_end <- wins$end_date
       
       # Build local day bounds (inclusive)
       start_dt <- as.POSIXct(paste0(win_start, " 00:00:00"), tz = local_tz)
@@ -1112,8 +1130,8 @@ mod_intervention_server <- function(id) {
       # (optional) ensure saved timestamps carry the local tz explicitly
       steps_ts$timestamp <- lubridate::force_tz(steps_ts$timestamp, tzone = local_tz)
       
-      # Daily summary for the selected window only
-      dsum <- daily_summary(steps_ts, tz = local_tz)
+      # Daily summary including every day in the selected window
+      dsum <- wins$current
       
       # Medians for the selected window
       medians <- list(
@@ -1188,23 +1206,31 @@ mod_intervention_server <- function(id) {
         st$n_targets_steps_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_steps_t1 + 1L else st$n_targets_steps_t1
         st$n_targets_steps_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_steps_t2 + 1L else st$n_targets_steps_t2
         st$n_targets_steps_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_steps_t3 + 1L else st$n_targets_steps_t3
-        st$n_targets_steps_met = if (length(st$history)) {
-          as.integer(sum(sapply(st$history, function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met <- count_met_flags(
+          st$history,
+          "steps_met"
+        )
+        st$n_targets_steps_met_t1 <- if (length(st$history)) {
+          count_met_flags(
+            st$history[seq_len(min(5, length(st$history)))],
+            "steps_met"
+          )
         } else {
           0L
         }
-        st$n_targets_steps_met_t1 = if (length(st$history)) {
-          as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t2 <- if (length(st$history) > 5) {
+          count_met_flags(
+            st$history[6:min(11, length(st$history))],
+            "steps_met"
+          )
         } else {
           0L
         }
-        st$n_targets_steps_met_t2 = if (length(st$history) > 5) {
-          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$steps_met), na.rm = T))
-        } else {
-          0L
-        }
-        st$n_targets_steps_met_t3 = if (length(st$history) > 11) {
-          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$steps_met), na.rm = T))
+        st$n_targets_steps_met_t3 <- if (length(st$history) > 11) {
+          count_met_flags(
+            st$history[12:length(st$history)],
+            "steps_met"
+          )
         } else {
           0L
         }
@@ -1213,24 +1239,29 @@ mod_intervention_server <- function(id) {
         # st$n_targets_cadence_t1 = if (!is.na(st$last_X) & rv$current_t %in% 1:5) st$n_targets_cadence_t1 + 1L else st$n_targets_cadence_t1
         st$n_targets_cadence_t2 = if(!is.na(st$last_X) & rv$current_t %in% 6:11) st$n_targets_cadence_t2 + 1L else st$n_targets_cadence_t2
         st$n_targets_cadence_t3 = if(!is.na(st$last_X) & rv$current_t >= 12) st$n_targets_cadence_t3 + 1L else st$n_targets_cadence_t3
-        st$n_targets_cadence_met = if (length(st$history)) {
-          as.integer(sum(sapply(st$history, function(x) x$cadence_met), na.rm = T))
-        } else {
-          0L
-        }
+        st$n_targets_cadence_met <- count_met_flags(
+          st$history,
+          "cadence_met"
+        )
         }
         # st$n_targets_cadence_met_t1 = if (length(st$history) > 1) {
         #   as.integer(sum(sapply(st$history[1:(min(5, length(st$history)))], function(x) x$cadence_met), na.rm = T))
         # } else {
         #   0L
         # }
-        st$n_targets_cadence_met_t2 = if (length(st$history) > 5) {
-          as.integer(sum(sapply(st$history[6:(min(11, length(st$history)))], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t2 <- if (length(st$history) > 5) {
+          count_met_flags(
+            st$history[6:min(11, length(st$history))],
+            "cadence_met"
+          )
         } else {
           0L
         }
-        st$n_targets_cadence_met_t3 = if (length(st$history) > 11) {
-          as.integer(sum(sapply(st$history[12:length(st$history)], function(x) x$cadence_met), na.rm = T))
+        st$n_targets_cadence_met_t3 <- if (length(st$history) > 11) {
+          count_met_flags(
+            st$history[12:length(st$history)],
+            "cadence_met"
+          )
         } else {
           0L
         }

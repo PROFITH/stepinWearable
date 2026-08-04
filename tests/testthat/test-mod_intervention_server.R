@@ -33,6 +33,7 @@ test_that("Decision engine caps step target at +5000 from baseline during phase 
     last_Y = 30L,
     last_Z = 100L,
     last_steps_factor = 1.05,
+    last_minutes_inc = 5L,
     consecutive_fails = 0L
   )
   
@@ -44,7 +45,6 @@ test_that("Decision engine caps step target at +5000 from baseline during phase 
     prev_k = prev_kpis_A,
     nombre = "TestUser",
     steps_factor = 1.05, 
-    minutes_inc = 5,
     t = 6
   )
   
@@ -67,6 +67,7 @@ test_that("Decision engine caps step target at +5000 from baseline during phase 
     last_Y = 30L,
     last_Z = 100L,
     last_steps_factor = 1.05,
+    last_minutes_inc = 5L,
     consecutive_fails = 0L
   )
   
@@ -78,11 +79,38 @@ test_that("Decision engine caps step target at +5000 from baseline during phase 
     prev_k = prev_kpis_B,
     nombre = "TestUser",
     steps_factor = 1.05, 
-    minutes_inc = 5,
     t = 6
   )
   
   # Expect the next_X to be frozen at the previously deployed target (10000)
   expect_equal(res_reach_cap$next_X, 10000)
+
   
+  # Manual reduction should be allowed after reaching the ceiling
+  res_manual_reduction <- decide_message(
+    state = state_already_capped,
+    cur_k = cur_kpis_excellent,
+    prev_k = prev_kpis_A,
+    nombre = "TestUser",
+    steps_factor = 1.05,
+    t = 6,
+    force_steps_factor = 0.90
+  )
+  
+  expect_equal(res_manual_reduction$next_X, 9900)
+  expect_equal(res_manual_reduction$steps_factor, 0.90)
+  
+  # Manual increase should remain blocked after reaching the ceiling
+  res_manual_increase <- decide_message(
+    state = state_already_capped,
+    cur_k = cur_kpis_excellent,
+    prev_k = prev_kpis_A,
+    nombre = "TestUser",
+    steps_factor = 1.05,
+    t = 6,
+    force_steps_factor = 1.05
+  )
+  
+  expect_equal(res_manual_increase$next_X, 11000)
+  expect_equal(res_manual_increase$steps_factor, 1.00)
 })
