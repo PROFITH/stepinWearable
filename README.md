@@ -1,4 +1,4 @@
-[![Codecov test coverage](https://codecov.io/gh/youruser/stepinWearable/branch/main/graph/badge.svg)](https://app.codecov.io/gh/PROFITH/stepinWearable)
+[![Codecov test coverage](https://codecov.io/gh/PROFITH/stepinWearable/branch/main/graph/badge.svg)](https://app.codecov.io/gh/PROFITH/stepinWearable)
 
 # stepinWearable: Personalized Wearable Platform for Research
 
